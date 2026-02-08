@@ -37,3 +37,13 @@
 //! [dependencies]
 //! hydra-amm = { version = "0.1", default-features = false, features = ["std", "constant-product"] }
 //! ```
+
+// Module declarations (always compiled)
+pub mod config;
+pub mod domain;
+pub mod error;
+pub mod factory;
+pub mod math;
+pub mod pools;
+pub mod prelude;
+pub mod traits;
