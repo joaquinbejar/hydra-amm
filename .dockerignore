@@ -1,0 +1,54 @@
+# Build artifacts
+target/
+*.rs.bk
+
+# Git
+.git/
+.gitignore
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Documentation (not needed in container)
+.internalDoc/
+docs/
+
+# Development files
+.windsurf/
+.env.local
+.env.*.local
+
+# Test artifacts
+*.profraw
+coverage/
+tarpaulin-report.html
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Cargo lock is needed for reproducible builds, so don't ignore it
+# Cargo.lock
+
+# CI/CD files (not needed in container)
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files (avoid recursive inclusion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

@@ -1,0 +1,37 @@
+[package]
+name = "hydra-amm"
+version = "0.1.0"
+edition = "2024"
+authors = ["Joaquin Bejar <jb@taunais.com>"]
+description = ""
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/joaquinbejar/hydra-amm.git"
+keywords = []
+categories = []
+
+[workspace]
+members = ["."]
+resolver = "2"
+
+[dependencies]
+
+[dev-dependencies]
+
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "warn"
+
+[profile.release]
+overflow-checks = true
+lto = "thin"
+codegen-units = 1
+
+[profile.dev]
+overflow-checks = true
