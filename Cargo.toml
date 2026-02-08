@@ -3,30 +3,84 @@ name = "hydra-amm"
 version = "0.1.0"
 edition = "2024"
 authors = ["Joaquin Bejar <jb@taunais.com>"]
-description = ""
+description = "Universal AMM engine: build, configure, and operate any Automated Market Maker through a unified interface"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/joaquinbejar/hydra-amm.git"
-keywords = []
-categories = []
+keywords = ["amm", "defi", "liquidity", "swap", "market-maker"]
+categories = ["finance", "algorithms", "no-std"]
 
-[workspace]
-members = ["."]
-resolver = "2"
+[lib]
+name = "hydra_amm"
+path = "src/lib.rs"
+
+[features]
+default = ["std", "all-pools"]
+
+# Standard library support: enables BTreeMap storage, Display impls, panic info
+std = []
+
+# Fixed-point arithmetic using the `fixed` crate (I80F48)
+fixed-point = ["dep:fixed"]
+
+# Floating-point arithmetic (requires std for f64 ops)
+float = ["std"]
+
+# Individual pool type features
+constant-product = []
+clmm = []
+hybrid = []
+weighted = []
+dynamic = []
+order-book = ["dep:orderbook-rs"]
+
+# Convenience: enable all pool types
+all-pools = [
+    "constant-product",
+    "clmm",
+    "hybrid",
+    "weighted",
+    "dynamic",
+    "order-book",
+]
 
 [dependencies]
+# Error handling (no_std compatible)
+thiserror = "2.0"
+
+# Fixed-point arithmetic: I80F48 type (optional, no default features)
+fixed = { version = "1", default-features = false, optional = true }
+
+# Serialization support (optional, no_std compatible via alloc)
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
+
+# Order book engine (optional, behind order-book feature)
+orderbook-rs = { version = "0.2", optional = true }
 
 [dev-dependencies]
+# Property-based testing for invariant validation
+proptest = "1.6"
+
+# Serialization for test fixtures
+serde_json = "1.0"
 
 [lints.rust]
 unsafe_code = "deny"
 missing_docs = "warn"
+missing_debug_implementations = "warn"
 
 [lints.clippy]
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
 indexing_slicing = "warn"
+needless_collect = "warn"
+unnecessary_to_owned = "warn"
+clone_on_ref_ptr = "warn"
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+module_name_repetitions = "allow"
+similar_names = "allow"
 
 [profile.release]
 overflow-checks = true
