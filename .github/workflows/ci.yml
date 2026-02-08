@@ -9,8 +9,6 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   fmt:
@@ -49,8 +47,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-clippy-
 
-      - name: Run Clippy
-        run: cargo clippy --all-targets --all-features --workspace -- -D warnings
+      - name: Run Clippy (all features)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run Clippy (no default features)
+        run: cargo clippy --all-targets --no-default-features -- -D warnings
 
   test:
     name: Test
@@ -72,12 +73,28 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-test-
 
-      - name: Run tests
-        run: cargo test --all-features --workspace
+      - name: Run tests (all features)
+        run: cargo test --all-features
+
+      - name: Run doc tests
+        run: cargo test --doc --all-features
 
   build:
     name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: "all features"
+            flags: "--all-features"
+          - name: "no default features"
+            flags: "--no-default-features"
+          - name: "constant-product only"
+            flags: "--no-default-features --features constant-product"
+          - name: "clmm only"
+            flags: "--no-default-features --features clmm"
+          - name: "fixed-point"
+            flags: "--no-default-features --features fixed-point,constant-product"
     steps:
       - uses: actions/checkout@v6
 
@@ -95,34 +112,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-build-
 
-      - name: Build workspace
-        run: cargo build --all-features --workspace
+      - name: Build (${{ matrix.name }})
+        run: cargo build ${{ matrix.flags }}
 
-  # Anchor build job - requires Solana and Anchor CLI
-  anchor-build:
-    name: Anchor Build
+  doc:
+    name: Documentation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev pkg-config
-
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: "1.92.0"
-
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Install Anchor CLI
-        run: |
-          cargo install anchor-cli@0.32.1 --force
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache cargo registry
         uses: actions/cache@v5
@@ -131,77 +131,15 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-anchor-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-doc-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-anchor-
+            ${{ runner.os }}-cargo-doc-
 
-      - name: Build with Anchor
-        run: anchor build
+      - name: Generate documentation
+        run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: "-D warnings"
 
-      - name: Check program size
-        run: |
-          PROGRAM_SIZE=$(stat -c%s target/deploy/matchbook.so 2>/dev/null || echo "0")
-          MAX_SIZE=1400000  # ~1.4MB limit for Solana programs
-          echo "Program size: $PROGRAM_SIZE bytes"
-          if [ "$PROGRAM_SIZE" -gt "$MAX_SIZE" ]; then
-            echo "Error: Program size exceeds limit"
-            exit 1
-          fi
-
-  # TypeScript SDK checks
-  typescript:
-    name: TypeScript
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ts-sdk
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: ts-sdk/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Run tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-  # Docker image builds (optional - binaries may not exist yet)
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    strategy:
-      matrix:
-        service: [indexer, api, crank]
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Docker/${{ matrix.service }}.Dockerfile
-          push: false
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # Test coverage
   coverage:
     name: Test Coverage
     runs-on: ubuntu-latest
@@ -228,7 +166,7 @@ jobs:
             ${{ runner.os }}-cargo-coverage-
 
       - name: Generate coverage report
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --all-features --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
