@@ -316,7 +316,9 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## Contact
 
-- **Author**: Joaquin Bejar — [jb@taunais.com](mailto:jb@taunais.com)
+- **Author**: Joaquín Béjar García
+- **Email**: jb@taunais.com
+- **Telegram**: [@joaquin_bejar](https://t.me/joaquin_bejar)
 - **Repository**: [github.com/joaquinbejar/hydra-amm](https://github.com/joaquinbejar/hydra-amm)
 - **Crates.io**: [crates.io/crates/hydra-amm](https://crates.io/crates/hydra-amm)
 - **Documentation**: [docs.rs/hydra-amm](https://docs.rs/hydra-amm)
