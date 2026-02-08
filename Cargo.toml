@@ -1,6 +1,6 @@
 [package]
 name = "hydra-amm"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Joaquin Bejar <jb@taunais.com>"]
 description = "Universal AMM engine: build, configure, and operate any Automated Market Maker through a unified interface"
