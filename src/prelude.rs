@@ -28,7 +28,7 @@
 // pub use crate::config::AmmConfig;
 
 // Re-export error types
-// pub use crate::error::{AmmError, Result};
+pub use crate::error::{AmmError, Result};
 
 // Re-export factory
 // pub use crate::factory::DefaultPoolFactory;
