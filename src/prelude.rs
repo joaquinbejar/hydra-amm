@@ -11,12 +11,8 @@
 //! configuration types, error types, and factory utilities so that
 //! consumers don't need to import from individual submodules.
 
-// Re-export domain types
-// pub use crate::domain::{
-//     Amount, BasisPoints, Decimals, FeeTier, Liquidity, LiquidityChange,
-//     Position, Price, Rounding, SwapResult, SwapSpec, Tick, Token,
-//     TokenAddress, TokenPair,
-// };
+// Re-export domain types (types added incrementally as they are implemented)
+pub use crate::domain::{Decimals, Token, TokenAddress, TokenPair};
 
 // Re-export core traits
 // pub use crate::traits::{FromConfig, LiquidityPool, SwapPool};
