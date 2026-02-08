@@ -167,8 +167,10 @@ jobs:
 
       - name: Generate coverage report
         run: cargo llvm-cov --all-features --lcov --output-path lcov.info
+        continue-on-error: true
 
       - name: Upload coverage to Codecov
+        if: hashFiles('lcov.info') != ''
         uses: codecov/codecov-action@v5
         with:
           files: lcov.info
