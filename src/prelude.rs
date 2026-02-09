@@ -32,7 +32,10 @@ pub use crate::math::FixedPointArithmetic;
 pub use crate::math::FloatArithmetic;
 
 // Re-export configuration
-// pub use crate::config::AmmConfig;
+pub use crate::config::{
+    AmmConfig, ClmmConfig, ConstantProductConfig, DynamicConfig, HybridConfig, OrderBookConfig,
+    WeightedConfig,
+};
 
 // Re-export error types
 pub use crate::error::{AmmError, Result};
