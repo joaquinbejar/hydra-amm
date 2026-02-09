@@ -16,6 +16,7 @@ use crate::error::AmmError;
 /// # Validation
 ///
 /// - Both reserves must be non-zero.
+/// - Fee tier must be a valid percentage (0–10 000 basis points).
 /// - The token pair is validated at [`TokenPair`] construction time.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConstantProductConfig {
@@ -30,7 +31,8 @@ impl ConstantProductConfig {
     ///
     /// # Errors
     ///
-    /// Returns [`AmmError::ZeroReserve`] if either reserve is zero.
+    /// - [`AmmError::InvalidFee`] if the fee tier exceeds 100% (10 000 basis points).
+    /// - [`AmmError::ZeroReserve`] if either reserve is zero.
     pub fn new(
         token_pair: TokenPair,
         fee_tier: FeeTier,
@@ -51,8 +53,14 @@ impl ConstantProductConfig {
     ///
     /// # Errors
     ///
-    /// Returns [`AmmError::ZeroReserve`] if either reserve is zero.
+    /// - [`AmmError::InvalidFee`] if the fee tier exceeds 100% (10 000 basis points).
+    /// - [`AmmError::ZeroReserve`] if either reserve is zero.
     pub fn validate(&self) -> Result<(), AmmError> {
+        if !self.fee_tier.basis_points().is_valid_percent() {
+            return Err(AmmError::InvalidFee(
+                "fee tier must not exceed 10000 basis points (100%)",
+            ));
+        }
         if self.reserve_a.is_zero() {
             return Err(AmmError::ZeroReserve);
         }
@@ -91,6 +99,8 @@ mod tests {
     use super::*;
     use crate::domain::{BasisPoints, Decimals, Token, TokenAddress};
 
+    // -- helpers --------------------------------------------------------------
+
     fn make_pair() -> TokenPair {
         let Ok(d6) = Decimals::new(6) else {
             panic!("valid decimals");
@@ -110,6 +120,17 @@ mod tests {
         FeeTier::new(BasisPoints::new(30))
     }
 
+    fn valid_cfg() -> ConstantProductConfig {
+        let Ok(cfg) =
+            ConstantProductConfig::new(make_pair(), fee(), Amount::new(1_000), Amount::new(2_000))
+        else {
+            panic!("expected Ok");
+        };
+        cfg
+    }
+
+    // -- valid construction ---------------------------------------------------
+
     #[test]
     fn valid_config() {
         let result =
@@ -118,18 +139,109 @@ mod tests {
     }
 
     #[test]
+    fn valid_with_standard_fee_tiers() {
+        for tier in [
+            FeeTier::TIER_0_01_PERCENT,
+            FeeTier::TIER_0_05_PERCENT,
+            FeeTier::TIER_0_30_PERCENT,
+            FeeTier::TIER_1_00_PERCENT,
+        ] {
+            let result =
+                ConstantProductConfig::new(make_pair(), tier, Amount::new(1), Amount::new(1));
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn valid_with_zero_fee() {
+        let zero_fee = FeeTier::new(BasisPoints::new(0));
+        let result =
+            ConstantProductConfig::new(make_pair(), zero_fee, Amount::new(1), Amount::new(1));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn valid_with_max_valid_fee() {
+        let max_fee = FeeTier::new(BasisPoints::new(10_000));
+        let result =
+            ConstantProductConfig::new(make_pair(), max_fee, Amount::new(1), Amount::new(1));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn large_reserves_accepted() {
+        let result = ConstantProductConfig::new(
+            make_pair(),
+            fee(),
+            Amount::new(u128::MAX),
+            Amount::new(u128::MAX),
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn minimum_reserves_accepted() {
+        let result = ConstantProductConfig::new(make_pair(), fee(), Amount::new(1), Amount::new(1));
+        assert!(result.is_ok());
+    }
+
+    // -- fee_tier validation --------------------------------------------------
+
+    #[test]
+    fn fee_exceeding_100_percent_rejected() {
+        let bad_fee = FeeTier::new(BasisPoints::new(10_001));
+        let result = ConstantProductConfig::new(
+            make_pair(),
+            bad_fee,
+            Amount::new(1_000),
+            Amount::new(1_000),
+        );
+        assert!(matches!(result, Err(AmmError::InvalidFee(_))));
+    }
+
+    #[test]
+    fn fee_way_above_range_rejected() {
+        let bad_fee = FeeTier::new(BasisPoints::new(u32::MAX));
+        let result = ConstantProductConfig::new(
+            make_pair(),
+            bad_fee,
+            Amount::new(1_000),
+            Amount::new(1_000),
+        );
+        assert!(matches!(result, Err(AmmError::InvalidFee(_))));
+    }
+
+    // -- reserve validation ---------------------------------------------------
+
+    #[test]
     fn zero_reserve_a_rejected() {
         let result =
             ConstantProductConfig::new(make_pair(), fee(), Amount::ZERO, Amount::new(1_000));
-        assert!(result.is_err());
+        assert!(matches!(result, Err(AmmError::ZeroReserve)));
     }
 
     #[test]
     fn zero_reserve_b_rejected() {
         let result =
             ConstantProductConfig::new(make_pair(), fee(), Amount::new(1_000), Amount::ZERO);
-        assert!(result.is_err());
+        assert!(matches!(result, Err(AmmError::ZeroReserve)));
     }
+
+    #[test]
+    fn both_reserves_zero_rejected() {
+        let result = ConstantProductConfig::new(make_pair(), fee(), Amount::ZERO, Amount::ZERO);
+        assert!(matches!(result, Err(AmmError::ZeroReserve)));
+    }
+
+    // -- validate on existing instance ----------------------------------------
+
+    #[test]
+    fn validate_on_valid_config_succeeds() {
+        let cfg = valid_cfg();
+        assert!(cfg.validate().is_ok());
+    }
+
+    // -- accessors ------------------------------------------------------------
 
     #[test]
     fn accessors() {
@@ -143,5 +255,38 @@ mod tests {
         assert_eq!(cfg.fee_tier(), f);
         assert_eq!(cfg.reserve_a(), Amount::new(100));
         assert_eq!(cfg.reserve_b(), Amount::new(200));
+    }
+
+    // -- Clone & PartialEq ---------------------------------------------------
+
+    #[test]
+    fn clone_equality() {
+        let cfg = valid_cfg();
+        let cloned = cfg.clone();
+        assert_eq!(cfg, cloned);
+    }
+
+    #[test]
+    fn different_reserves_not_equal() {
+        let Ok(a) =
+            ConstantProductConfig::new(make_pair(), fee(), Amount::new(100), Amount::new(200))
+        else {
+            panic!("expected Ok");
+        };
+        let Ok(b) =
+            ConstantProductConfig::new(make_pair(), fee(), Amount::new(300), Amount::new(400))
+        else {
+            panic!("expected Ok");
+        };
+        assert_ne!(a, b);
+    }
+
+    // -- Debug ----------------------------------------------------------------
+
+    #[test]
+    fn debug_format_contains_struct_name() {
+        let cfg = valid_cfg();
+        let dbg = format!("{cfg:?}");
+        assert!(dbg.contains("ConstantProductConfig"));
     }
 }
