@@ -21,8 +21,8 @@ pub use crate::domain::{
 // pub use crate::traits::{FromConfig, LiquidityPool, SwapPool};
 
 // Re-export math utilities
+pub use crate::math::CheckedArithmetic;
 pub use crate::math::Precision;
-// pub use crate::math::CheckedArithmetic;
 
 #[cfg(feature = "fixed-point")]
 pub use crate::math::FixedPointArithmetic;
