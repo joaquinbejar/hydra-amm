@@ -58,19 +58,16 @@ impl SwapResult {
     }
 
     /// Returns the input amount.
-    #[must_use]
     pub const fn amount_in(&self) -> Amount {
         self.amount_in
     }
 
     /// Returns the output amount.
-    #[must_use]
     pub const fn amount_out(&self) -> Amount {
         self.amount_out
     }
 
     /// Returns the fee paid.
-    #[must_use]
     pub const fn fee(&self) -> Amount {
         self.fee
     }

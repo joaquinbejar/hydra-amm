@@ -91,7 +91,6 @@ impl SwapSpec {
     }
 
     /// Extracts the amount regardless of variant.
-    #[must_use]
     pub const fn amount(&self) -> Amount {
         match self {
             Self::ExactIn { amount_in } => *amount_in,
