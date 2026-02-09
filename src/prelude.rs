@@ -44,4 +44,17 @@ pub use crate::error::{AmmError, Result};
 // pub use crate::factory::DefaultPoolFactory;
 
 // Re-export pool dispatch
-// pub use crate::pools::PoolBox;
+pub use crate::pools::PoolBox;
+
+#[cfg(feature = "clmm")]
+pub use crate::pools::ClmmPool;
+#[cfg(feature = "constant-product")]
+pub use crate::pools::ConstantProductPool;
+#[cfg(feature = "dynamic")]
+pub use crate::pools::DynamicPool;
+#[cfg(feature = "hybrid")]
+pub use crate::pools::HybridPool;
+#[cfg(feature = "order-book")]
+pub use crate::pools::OrderBookPool;
+#[cfg(feature = "weighted")]
+pub use crate::pools::WeightedPool;
