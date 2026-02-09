@@ -92,10 +92,24 @@ macro_rules! delegate {
             PoolBox::Dynamic(p) => p.$method($($arg),*),
             #[cfg(feature = "order-book")]
             PoolBox::OrderBook(p) => p.$method($($arg),*),
+            // When no pool features are enabled the enum is uninhabited,
+            // but `&mut PoolBox` / `&PoolBox` are still considered
+            // inhabited by the compiler.  This wildcard arm satisfies
+            // exhaustiveness without ever being reachable.
+            #[cfg(not(any(
+                feature = "constant-product",
+                feature = "clmm",
+                feature = "hybrid",
+                feature = "weighted",
+                feature = "dynamic",
+                feature = "order-book",
+            )))]
+            _ => unreachable!(),
         }
     };
 }
 
+#[allow(unused_variables)]
 impl SwapPool for PoolBox {
     fn swap(&mut self, spec: SwapSpec, token_in: Token) -> Result<SwapResult, AmmError> {
         delegate!(self, swap(spec, token_in))
@@ -114,6 +128,7 @@ impl SwapPool for PoolBox {
     }
 }
 
+#[allow(unused_variables)]
 impl LiquidityPool for PoolBox {
     fn add_liquidity(&mut self, change: &LiquidityChange) -> Result<Amount, AmmError> {
         delegate!(self, add_liquidity(change))
