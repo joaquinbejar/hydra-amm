@@ -18,8 +18,8 @@ pub use crate::domain::{
 };
 
 // Re-export core traits
-pub use crate::traits::SwapPool;
-// pub use crate::traits::{FromConfig, LiquidityPool};
+pub use crate::traits::{LiquidityPool, SwapPool};
+// pub use crate::traits::FromConfig;
 
 // Re-export math utilities
 pub use crate::math::CheckedArithmetic;
