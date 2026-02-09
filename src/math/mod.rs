@@ -13,6 +13,7 @@
 
 mod checked;
 mod precision;
+mod rounding;
 
 #[cfg(feature = "fixed-point")]
 mod fixed_precision;
@@ -21,6 +22,7 @@ mod float_precision;
 
 pub use checked::CheckedArithmetic;
 pub use precision::Precision;
+pub use rounding::div_round;
 
 #[cfg(feature = "fixed-point")]
 pub use fixed_precision::FixedPointArithmetic;

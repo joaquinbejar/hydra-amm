@@ -23,6 +23,7 @@ pub use crate::domain::{
 // Re-export math utilities
 pub use crate::math::CheckedArithmetic;
 pub use crate::math::Precision;
+pub use crate::math::div_round;
 
 #[cfg(feature = "fixed-point")]
 pub use crate::math::FixedPointArithmetic;
