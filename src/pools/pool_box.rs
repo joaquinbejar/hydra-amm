@@ -148,7 +148,7 @@ impl LiquidityPool for PoolBox {
 }
 
 #[cfg(test)]
-#[allow(clippy::panic)]
+#[allow(clippy::panic, unused_imports, dead_code)]
 mod tests {
     use super::*;
     use crate::domain::{BasisPoints, Decimals, Token, TokenAddress};
