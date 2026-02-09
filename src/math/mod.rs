@@ -1,5 +1,26 @@
 //! Arithmetic and precision utilities for AMM calculations.
 //!
-//! This module provides the `Precision` trait for feature-gated numeric
+//! This module provides the [`Precision`] trait for feature-gated numeric
 //! backends, `CheckedArithmetic` for overflow-safe operations,
 //! `Rounding` for explicit division rounding, and tick math helpers.
+//!
+//! # Feature-gated backends
+//!
+//! | Feature | Type | Use case |
+//! |---------|------|----------|
+//! | `float` | `FloatArithmetic` | Off-chain simulation |
+//! | `fixed-point` | `FixedPointArithmetic` | On-chain (Solana BPF) |
+
+mod precision;
+
+#[cfg(feature = "fixed-point")]
+mod fixed_precision;
+#[cfg(feature = "float")]
+mod float_precision;
+
+pub use precision::Precision;
+
+#[cfg(feature = "fixed-point")]
+pub use fixed_precision::FixedPointArithmetic;
+#[cfg(feature = "float")]
+pub use float_precision::FloatArithmetic;
