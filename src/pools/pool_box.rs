@@ -197,11 +197,12 @@ mod tests {
         #[test]
         fn total_liquidity_delegation() {
             let pb = make_cp_pool_box();
-            assert_eq!(pb.total_liquidity(), Liquidity::ZERO);
+            // sqrt(1000 * 2000) = sqrt(2_000_000) = 1414
+            assert_eq!(pb.total_liquidity(), Liquidity::new(1414));
         }
 
         #[test]
-        fn swap_returns_not_implemented() {
+        fn swap_delegation() {
             let mut pb = make_cp_pool_box();
             let Ok(d6) = Decimals::new(6) else {
                 panic!("valid decimals");
@@ -211,7 +212,7 @@ mod tests {
                 panic!("expected valid spec");
             };
             let result = pb.swap(spec, tok);
-            assert!(result.is_err());
+            assert!(result.is_ok());
         }
 
         #[test]
