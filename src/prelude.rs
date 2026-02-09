@@ -13,8 +13,8 @@
 
 // Re-export domain types (types added incrementally as they are implemented)
 pub use crate::domain::{
-    Amount, BasisPoints, Decimals, FeeTier, Liquidity, Rounding, Tick, Token, TokenAddress,
-    TokenPair,
+    Amount, BasisPoints, ChangeType, Decimals, FeeTier, Liquidity, LiquidityChange, Position,
+    Price, Rounding, SwapResult, SwapSpec, SwapType, Tick, Token, TokenAddress, TokenPair,
 };
 
 // Re-export core traits
