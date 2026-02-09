@@ -24,6 +24,7 @@ pub use crate::domain::{
 pub use crate::math::CheckedArithmetic;
 pub use crate::math::Precision;
 pub use crate::math::div_round;
+pub use crate::math::{price_at_tick, tick_at_price};
 
 #[cfg(feature = "fixed-point")]
 pub use crate::math::FixedPointArithmetic;

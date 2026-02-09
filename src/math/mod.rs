@@ -14,6 +14,7 @@
 mod checked;
 mod precision;
 mod rounding;
+mod tick_math;
 
 #[cfg(feature = "fixed-point")]
 mod fixed_precision;
@@ -23,6 +24,7 @@ mod float_precision;
 pub use checked::CheckedArithmetic;
 pub use precision::Precision;
 pub use rounding::div_round;
+pub use tick_math::{price_at_tick, tick_at_price};
 
 #[cfg(feature = "fixed-point")]
 pub use fixed_precision::FixedPointArithmetic;
