@@ -64,7 +64,13 @@ The crate is organized into six layers, each building on the previous:
 
 ## Installation
 
-Add `hydra-amm` to your `Cargo.toml`:
+Add `hydra-amm` to your project:
+
+```bash
+cargo add hydra-amm
+```
+
+Or add it manually to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -108,63 +114,124 @@ hydra-amm = { version = "0.1", default-features = false, features = ["fixed-poin
 
 ## Quick Start
 
-### Creating a Constant Product Pool
+### Creating a Constant Product Pool and Executing a Swap
 
-```rust,no_run
-use hydra_amm::{
-    config::ConstantProductConfig,
-    domain::{Amount, Token, TokenPair, FeeTier},
-    factory::DefaultPoolFactory,
-    traits::SwapPool,
+```rust
+use hydra_amm::config::{AmmConfig, ConstantProductConfig};
+use hydra_amm::domain::{
+    Amount, BasisPoints, Decimals, FeeTier, SwapSpec,
+    Token, TokenAddress, TokenPair,
 };
+use hydra_amm::factory::DefaultPoolFactory;
+use hydra_amm::traits::SwapPool;
+
+// 1. Define two tokens (32-byte addresses + decimal precision)
+let usdc = Token::new(
+    TokenAddress::from_bytes([1u8; 32]),
+    Decimals::new(6).expect("valid decimals"),
+);
+let weth = Token::new(
+    TokenAddress::from_bytes([2u8; 32]),
+    Decimals::new(18).expect("valid decimals"),
+);
+
+// 2. Build a Constant Product pool configuration
+let pair = TokenPair::new(usdc, weth).expect("distinct tokens");
+let fee  = FeeTier::new(BasisPoints::new(30)); // 0.30% fee
+let config = AmmConfig::ConstantProduct(
+    ConstantProductConfig::new(pair, fee, Amount::new(1_000_000), Amount::new(1_000_000))
+        .expect("valid config"),
+);
+
+// 3. Create the pool via the factory
+let mut pool = DefaultPoolFactory::create(&config).expect("pool created");
+
+// 4. Execute a swap (sell 10 000 units of token A for token B)
+let spec = SwapSpec::exact_in(Amount::new(10_000)).expect("non-zero amount");
+let result = pool.swap(spec, usdc).expect("swap succeeded");
+
+assert!(result.amount_out().get() > 0);
+assert!(result.fee().get() > 0);
+```
+
+### Advanced: CLMM Pool with Concentrated Liquidity Positions
+
+```rust
+use hydra_amm::config::{AmmConfig, ClmmConfig};
+use hydra_amm::domain::{
+    Amount, BasisPoints, Decimals, FeeTier, Liquidity, LiquidityChange,
+    Position, SwapSpec, Tick, Token, TokenAddress, TokenPair,
+};
+use hydra_amm::factory::DefaultPoolFactory;
+use hydra_amm::traits::{LiquidityPool, SwapPool};
 
 // 1. Define tokens
-let token_a = Token::new("TOKEN_A", 18).expect("valid token");
-let token_b = Token::new("TOKEN_B", 18).expect("valid token");
-let pair = TokenPair::new(token_a, token_b).expect("valid pair");
+let tok_a = Token::new(TokenAddress::from_bytes([1u8; 32]), Decimals::new(6).expect("ok"));
+let tok_b = Token::new(TokenAddress::from_bytes([2u8; 32]), Decimals::new(18).expect("ok"));
+let pair  = TokenPair::new(tok_a, tok_b).expect("distinct");
 
-// 2. Configure the pool
-let config = ConstantProductConfig {
-    token_pair: pair,
-    fee_tier: FeeTier::THIRTY_BPS,
-    initial_reserve_a: Amount::new(1_000_000),
-    initial_reserve_b: Amount::new(1_000_000),
-};
+// 2. Configure a CLMM pool at tick 0, tick spacing 10
+let fee = FeeTier::new(BasisPoints::new(30));
+let initial_position = Position::new(
+    Tick::new(-100).expect("valid tick"),
+    Tick::new(100).expect("valid tick"),
+    Liquidity::new(1_000_000),
+).expect("valid position");
 
-// 3. Create via factory and execute swaps
-let pool = DefaultPoolFactory::create(&config.into()).expect("pool created");
+let config = AmmConfig::Clmm(
+    ClmmConfig::new(
+        pair,
+        fee,
+        10,                                  // tick spacing
+        Tick::new(0).expect("valid tick"),    // current tick
+        vec![initial_position],              // initial positions
+    ).expect("valid config"),
+);
+
+// 3. Create pool and add more liquidity
+let mut pool = DefaultPoolFactory::create(&config).expect("pool created");
+let add = LiquidityChange::add(Amount::new(500_000), Amount::new(500_000))
+    .expect("valid change");
+let _ = pool.add_liquidity(&add);
+
+// 4. Execute a swap
+let spec = SwapSpec::exact_in(Amount::new(1_000)).expect("non-zero");
+let result = pool.swap(spec, tok_a).expect("swap ok");
+assert!(result.amount_out().get() > 0);
 ```
 
 ### Implementing a Custom Pool
 
-Implement the `SwapPool` and `LiquidityPool` traits for your own AMM type:
+Implement the `SwapPool` trait for your own AMM type:
 
 ```rust,ignore
-use hydra_amm::traits::{SwapPool, LiquidityPool};
-use hydra_amm::domain::*;
+use hydra_amm::traits::SwapPool;
+use hydra_amm::domain::{FeeTier, Price, SwapResult, SwapSpec, Token, TokenPair};
 use hydra_amm::error::AmmError;
 
 struct MyCustomPool {
+    pair: TokenPair,
+    fee: FeeTier,
     // your state here
 }
 
 impl SwapPool for MyCustomPool {
-    fn swap(&mut self, spec: &SwapSpec) -> Result<SwapResult, AmmError> {
-        // your swap logic
+    fn swap(&mut self, spec: SwapSpec, token_in: Token) -> Result<SwapResult, AmmError> {
+        // your swap logic — apply fee, compute output, update reserves
         todo!()
     }
 
     fn spot_price(&self, base: &Token, quote: &Token) -> Result<Price, AmmError> {
-        // your pricing logic
+        // return the current exchange rate (quote per base)
         todo!()
     }
 
     fn token_pair(&self) -> &TokenPair {
-        todo!()
+        &self.pair
     }
 
     fn fee_tier(&self) -> FeeTier {
-        todo!()
+        self.fee
     }
 }
 ```
@@ -181,7 +248,8 @@ hydra_amm/
 ├── traits      — SwapPool, LiquidityPool, FromConfig
 ├── config      — AmmConfig enum + per-pool config structs
 ├── pools       — Feature-gated pool implementations + PoolBox dispatch enum
-└── factory     — DefaultPoolFactory::create()
+├── factory     — DefaultPoolFactory::create()
+└── prelude     — Convenience re-exports for common types and traits
 ```
 
 ---
@@ -191,11 +259,18 @@ hydra_amm/
 This crate prioritizes correctness above all:
 
 - **`unsafe` code is denied** — enforced at the compiler level
-- **No `.unwrap()` / `.expect()` / `panic!`** — denied via Clippy lints
+- **No `.unwrap()` / `.expect()` / `panic!`** — denied via Clippy lints in library code
 - **Checked arithmetic** — all operations return `Option` or `Result`
 - **Explicit rounding** — all divisions specify rounding direction (up or down, always against the user)
 - **Overflow checks** enabled in both debug and release profiles
 - **Property-based testing** with `proptest` for invariant validation
+- **30 doc-tests** — all code examples in documentation are compiled and executed
+
+---
+
+## API Reference
+
+Full API documentation is available on [docs.rs/hydra-amm](https://docs.rs/hydra-amm).
 
 ---
 
@@ -303,7 +378,7 @@ Contributions are welcome! Please follow these guidelines:
 - All comments and documentation in **English**
 - `///` doc comments on every public item
 - `#[must_use]` on all pure functions
-- Checked arithmetic only — no panics
+- Checked arithmetic only — no panics in library code
 - Newtypes for all domain concepts
 
 ---
@@ -322,4 +397,3 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 - **Repository**: [github.com/joaquinbejar/hydra-amm](https://github.com/joaquinbejar/hydra-amm)
 - **Crates.io**: [crates.io/crates/hydra-amm](https://crates.io/crates/hydra-amm)
 - **Documentation**: [docs.rs/hydra-amm](https://docs.rs/hydra-amm)
-
