@@ -1221,4 +1221,59 @@ mod tests {
         assert_eq!(pool.accumulated_fees_base().get(), 0);
         assert!(pool.accumulated_fees_quote().get() > 0);
     }
+
+    // -- Add liquidity wrong variant rejected ---------------------------------
+
+    #[test]
+    fn add_liquidity_wrong_variant_rejected() {
+        let mut pool = make_pool(zero_fee());
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::new(1),
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Remove liquidity wrong variant rejected ------------------------------
+
+    #[test]
+    fn remove_liquidity_wrong_variant_rejected() {
+        let mut pool = make_pool(zero_fee());
+        let change = LiquidityChange::Add {
+            amount_a: Amount::new(100),
+            amount_b: Amount::new(100),
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Swap exact-out sell base ---------------------------------------------
+
+    #[test]
+    fn swap_exact_out_sell_base() {
+        let mut pool = make_pool(zero_fee());
+        // Place large bid liquidity
+        assert!(pool.place_limit_order(100, 10_000, Side::Buy).is_ok());
+
+        let Ok(spec) = SwapSpec::exact_out(Amount::new(50_000)) else {
+            panic!("valid spec");
+        };
+        let Ok(result) = pool.swap(spec, token_a()) else {
+            panic!("expected Ok");
+        };
+        // Selling base for exact quote output
+        assert!(result.amount_out().get() >= 50_000);
+        assert!(result.amount_in().get() > 0);
+    }
+
+    // -- Spot price one side only errors --------------------------------------
+
+    #[test]
+    fn spot_price_one_side_only_errors() {
+        let pool = make_pool(zero_fee());
+        // Only bid side populated → no ask → no mid-price
+        assert!(pool.place_limit_order(100, 500, Side::Buy).is_ok());
+        let result = pool.spot_price(&token_a(), &token_b());
+        assert!(matches!(result, Err(AmmError::InsufficientLiquidity)));
+    }
 }

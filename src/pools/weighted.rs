@@ -1433,4 +1433,62 @@ mod tests {
         assert!(result.amount_out().get() < 5_000_000);
         assert!(result.amount_out().get() > 0);
     }
+
+    // -- Remove zero liquidity ------------------------------------------------
+
+    #[test]
+    fn remove_zero_liquidity_rejected() {
+        let mut pool = make_50_50(1_000_000, 1_000_000);
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::ZERO,
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Add liquidity both zero ----------------------------------------------
+
+    #[test]
+    fn add_liquidity_both_zero_rejected() {
+        let mut pool = make_50_50(1_000_000, 1_000_000);
+        let change = LiquidityChange::Add {
+            amount_a: Amount::ZERO,
+            amount_b: Amount::ZERO,
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidQuantity(_))));
+    }
+
+    // -- Swap B → A exact-in --------------------------------------------------
+
+    #[test]
+    fn swap_exact_in_b_to_a() {
+        let mut pool = make_50_50(1_000_000, 2_000_000);
+        let Ok(spec) = SwapSpec::exact_in(Amount::new(1_000)) else {
+            panic!("valid spec");
+        };
+        let Ok(result) = pool.swap(spec, tok(2)) else {
+            panic!("expected Ok");
+        };
+        // Reverse direction: selling B for A
+        assert!(result.amount_out().get() > 0);
+        assert!(result.fee().get() > 0);
+    }
+
+    // -- Remove all liquidity -------------------------------------------------
+
+    #[test]
+    fn remove_all_liquidity() {
+        let mut pool = make_50_50(1_000_000, 1_000_000);
+        let total = pool.total_liquidity().get();
+
+        let Ok(change) = LiquidityChange::remove(Liquidity::new(total)) else {
+            panic!("valid change");
+        };
+        let Ok(out_a) = pool.remove_liquidity(&change) else {
+            panic!("expected Ok");
+        };
+        assert!(out_a.get() > 0);
+        assert!(pool.total_liquidity().is_zero());
+    }
 }

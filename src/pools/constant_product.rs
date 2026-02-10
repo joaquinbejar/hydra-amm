@@ -1062,6 +1062,70 @@ mod tests {
         assert!(price_after < price_before);
     }
 
+    // -- Swap exact-out reverse direction ------------------------------------
+
+    #[test]
+    fn swap_exact_out_b_to_a() {
+        let mut pool = make_pool(1_000_000, 2_000_000);
+        let Ok(spec) = SwapSpec::exact_out(Amount::new(500)) else {
+            panic!("valid spec");
+        };
+        // Swap B in → A out
+        let Ok(result) = pool.swap(spec, tok_b()) else {
+            panic!("expected Ok");
+        };
+        assert!(result.amount_out().get() >= 500);
+        assert!(result.amount_in().get() > 0);
+        assert!(result.fee().get() > 0);
+    }
+
+    // -- Remove zero liquidity ------------------------------------------------
+
+    #[test]
+    fn remove_zero_liquidity_rejected() {
+        let mut pool = make_pool(1_000_000, 2_000_000);
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::ZERO,
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Add liquidity both zero ----------------------------------------------
+
+    #[test]
+    fn add_liquidity_both_zero_rejected() {
+        let mut pool = make_pool(1_000_000, 2_000_000);
+        let change = LiquidityChange::Add {
+            amount_a: Amount::ZERO,
+            amount_b: Amount::ZERO,
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidQuantity(_))));
+    }
+
+    // -- Invariant k preserved after exact-out --------------------------------
+
+    #[test]
+    fn invariant_k_preserved_after_exact_out() {
+        let mut pool = make_pool(1_000_000, 2_000_000);
+        let k_before = pool.reserve_a().get() * pool.reserve_b().get();
+
+        let Ok(spec) = SwapSpec::exact_out(Amount::new(1_000)) else {
+            panic!("valid spec");
+        };
+        let Ok(_) = pool.swap(spec, tok_a()) else {
+            panic!("expected Ok");
+        };
+
+        let k_after = pool.reserve_a().get() * pool.reserve_b().get();
+        // k should grow (fees stay in pool)
+        assert!(
+            k_after >= k_before,
+            "k_after={k_after} should >= k_before={k_before}"
+        );
+    }
+
     // -- Debug ----------------------------------------------------------------
 
     #[test]
