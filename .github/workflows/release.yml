@@ -65,7 +65,20 @@ jobs:
       - name: Verify package
         run: cargo package --list
 
+      - name: Check if version already published
+        id: check
+        run: |
+          VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if cargo search hydra-amm --limit 1 | grep -q "hydra-amm = \"$VERSION\""; then
+            echo "already_published=true" >> $GITHUB_OUTPUT
+            echo "::notice::hydra-amm@$VERSION is already published on crates.io — skipping publish"
+          else
+            echo "already_published=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Publish to crates.io
+        if: steps.check.outputs.already_published == 'false'
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: cargo publish
