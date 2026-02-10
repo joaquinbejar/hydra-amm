@@ -44,11 +44,11 @@ use orderbook_rs::{DefaultOrderBook, OrderId, Side, TimeInForce};
 /// # State
 ///
 /// - `token_pair` — the two tokens traded in this book
-/// - `fee_tier` — taker fee (deducted from input before matching)
-/// - `tick_size` — minimum price increment for limit orders
-/// - `lot_size` — minimum quantity increment for orders
+/// - `fee_tier` — taker fee (in basis points, deducted from input before matching)
+/// - `tick_size` — minimum price increment for limit orders (in price units)
+/// - `lot_size` — minimum quantity increment for orders (in raw token units)
 /// - `inner` — the `orderbook-rs` CLOB engine
-/// - `accumulated_fees_base` / `accumulated_fees_quote` — fee counters
+/// - `accumulated_fees_base` / `accumulated_fees_quote` — fee counters (in raw token units)
 ///
 /// # Trait Limitations
 ///

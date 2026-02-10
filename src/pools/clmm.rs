@@ -90,14 +90,14 @@ struct ClmmPosition {
 ///
 /// # State
 ///
-/// - `current_tick` — the tick index corresponding to the current price.
-/// - `sqrt_price` — `√(1.0001^current_tick)`, the authoritative price.
+/// - `current_tick` — the tick index corresponding to the current price (dimensionless integer)
+/// - `sqrt_price` — `√(1.0001^current_tick)`, the authoritative price (dimensionless ratio)
 /// - `current_liquidity` — sum of all position liquidities active at
-///   `current_tick`.
+///   `current_tick` (in raw liquidity units)
 /// - `fee_growth_global_a` / `fee_growth_global_b` — cumulative fees
-///   per unit of liquidity (scaled by 2^64).
-/// - `tick_states` — `BTreeMap<i32, TickState>` of initialised ticks.
-/// - `positions` — all LP positions.
+///   per unit of liquidity (scaled by 2^64, dimensionless)
+/// - `tick_states` — `BTreeMap<i32, TickState>` of initialised ticks
+/// - `positions` — all LP positions
 #[derive(Debug, Clone, PartialEq)]
 pub struct ClmmPool {
     token_pair: TokenPair,

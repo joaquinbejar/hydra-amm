@@ -36,9 +36,35 @@ const BPS_DENOMINATOR: u128 = 10_000;
 ///
 /// # State
 ///
-/// - `reserve_a` / `reserve_b` — current token balances (include fees)
-/// - `total_liq` — outstanding LP shares (√(reserve_a × reserve_b) at genesis)
-/// - `accumulated_fees_a` / `accumulated_fees_b` — lifetime fee counters
+/// - `reserve_a` / `reserve_b` — current token balances (in raw token units, fees included)
+/// - `total_liq` — outstanding LP shares (in raw liquidity units, √(reserve_a × reserve_b) at genesis)
+/// - `accumulated_fees_a` / `accumulated_fees_b` — lifetime fee counters (in raw token units)
+///
+/// # Example
+///
+/// ```rust
+/// use hydra_amm::config::ConstantProductConfig;
+/// use hydra_amm::domain::{
+///     Amount, BasisPoints, Decimals, FeeTier, SwapSpec,
+///     Token, TokenAddress, TokenPair,
+/// };
+/// use hydra_amm::traits::{FromConfig, SwapPool};
+///
+/// let tok_a = Token::new(TokenAddress::from_bytes([1u8; 32]), Decimals::new(6).expect("ok"));
+/// let tok_b = Token::new(TokenAddress::from_bytes([2u8; 32]), Decimals::new(18).expect("ok"));
+/// let pair  = TokenPair::new(tok_a, tok_b).expect("distinct");
+/// let fee   = FeeTier::new(BasisPoints::new(30));
+/// let cfg   = ConstantProductConfig::new(pair, fee, Amount::new(1_000_000), Amount::new(1_000_000))
+///     .expect("valid config");
+///
+/// let mut pool = hydra_amm::pools::ConstantProductPool::from_config(&cfg)
+///     .expect("pool created");
+///
+/// let spec   = SwapSpec::exact_in(Amount::new(1_000)).expect("non-zero");
+/// let result = pool.swap(spec, tok_a).expect("swap ok");
+/// assert!(result.amount_out().get() > 0);
+/// assert!(result.fee().get() > 0);
+/// ```
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConstantProductPool {
     token_pair: TokenPair,

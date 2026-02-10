@@ -42,9 +42,24 @@ use crate::traits::{LiquidityPool, SwapPool};
 ///
 /// # Example
 ///
-/// ```text
-/// let pool_box = PoolBox::ConstantProduct(Box::new(cp_pool));
-/// let pair = pool_box.token_pair();
+/// ```rust
+/// use hydra_amm::config::{AmmConfig, ConstantProductConfig};
+/// use hydra_amm::domain::{
+///     Amount, BasisPoints, Decimals, FeeTier, Token, TokenAddress, TokenPair,
+/// };
+/// use hydra_amm::factory::DefaultPoolFactory;
+/// use hydra_amm::traits::SwapPool;
+///
+/// let tok_a = Token::new(TokenAddress::from_bytes([1u8; 32]), Decimals::new(6).expect("ok"));
+/// let tok_b = Token::new(TokenAddress::from_bytes([2u8; 32]), Decimals::new(18).expect("ok"));
+/// let pair  = TokenPair::new(tok_a, tok_b).expect("distinct");
+/// let fee   = FeeTier::new(BasisPoints::new(30));
+/// let cfg   = ConstantProductConfig::new(pair, fee, Amount::new(1_000_000), Amount::new(1_000_000))
+///     .expect("valid");
+///
+/// let pool_box = DefaultPoolFactory::create(&AmmConfig::ConstantProduct(cfg))
+///     .expect("pool created");
+/// assert_eq!(*pool_box.token_pair(), pair);
 /// ```
 #[derive(Debug)]
 pub enum PoolBox {
