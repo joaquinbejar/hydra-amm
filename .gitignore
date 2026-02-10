@@ -43,6 +43,9 @@ target/
 # Generated code (proto, SBE)
 src/api/grpc/generated/
 
+# Distribution artifacts
+dist/
+
 # Local development
 .local/
 /Docker/.erlang.cookie
