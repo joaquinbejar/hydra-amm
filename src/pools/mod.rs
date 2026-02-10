@@ -30,6 +30,10 @@ pub mod weighted;
 
 mod pool_box;
 
+#[cfg(test)]
+#[allow(clippy::panic)]
+mod proptest_properties;
+
 #[cfg(feature = "clmm")]
 pub use clmm::ClmmPool;
 #[cfg(feature = "constant-product")]
