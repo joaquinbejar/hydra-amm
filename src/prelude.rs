@@ -41,7 +41,7 @@ pub use crate::config::{
 pub use crate::error::{AmmError, Result};
 
 // Re-export factory
-// pub use crate::factory::DefaultPoolFactory;
+pub use crate::factory::DefaultPoolFactory;
 
 // Re-export pool dispatch
 pub use crate::pools::PoolBox;

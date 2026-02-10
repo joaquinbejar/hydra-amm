@@ -73,13 +73,13 @@ fn checked_powf(base: f64, exp: f64) -> Result<f64, AmmError> {
 ///
 /// # State
 ///
-/// - `tokens` — ordered list of tokens.
-/// - `weights` — per-token weight in basis points (sum = 10 000).
-/// - `balances` — current reserve of each token.
-/// - `fee_tier` — swap fee in basis points.
-/// - `token_pair` — first two tokens for trait compatibility.
-/// - `total_liq` — outstanding LP shares.
-/// - `accumulated_fees` — lifetime per-token fee counters.
+/// - `tokens` — ordered list of tokens
+/// - `weights` — per-token weight (in basis points, sum = 10 000 = 100%)
+/// - `balances` — current reserve of each token (in raw token units)
+/// - `fee_tier` — swap fee (in basis points)
+/// - `token_pair` — first two tokens for trait compatibility
+/// - `total_liq` — outstanding LP shares (in raw liquidity units)
+/// - `accumulated_fees` — lifetime per-token fee counters (in raw token units)
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedPool {
     tokens: Vec<Token>,

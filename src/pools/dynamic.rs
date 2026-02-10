@@ -45,12 +45,12 @@ use crate::traits::{FromConfig, LiquidityPool, SwapPool};
 ///
 /// # State
 ///
-/// - `base_reserve` / `quote_reserve` — current token balances
-/// - `target_base` / `target_quote` — initial target inventory levels
-/// - `oracle_price` — external reference price (updatable)
-/// - `k` — slippage coefficient ∈ [0, 1]
-/// - `total_liq` — outstanding LP shares
-/// - `accumulated_fees_base` / `accumulated_fees_quote` — fee counters
+/// - `base_reserve` / `quote_reserve` — current token balances (in raw token units)
+/// - `target_base` / `target_quote` — initial target inventory levels (in raw token units)
+/// - `oracle_price` — external reference price (quote per base, dimensionless ratio)
+/// - `k` — slippage coefficient ∈ [0, 1] (dimensionless)
+/// - `total_liq` — outstanding LP shares (in raw liquidity units)
+/// - `accumulated_fees_base` / `accumulated_fees_quote` — fee counters (in raw token units)
 #[derive(Debug, Clone, PartialEq)]
 pub struct DynamicPool {
     token_pair: TokenPair,

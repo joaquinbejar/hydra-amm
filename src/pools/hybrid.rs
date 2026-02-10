@@ -292,12 +292,11 @@ fn compute_y(x_new: u128, d: u128, amp: u128) -> Result<u128, AmmError> {
 ///
 /// # State
 ///
-/// - `reserve_a` / `reserve_b` — current token balances.
-/// - `amplification` — the `A` parameter controlling curve shape.
-/// - `total_liq` — outstanding LP shares.
-/// - `accumulated_fees_a` / `accumulated_fees_b` — lifetime fee
-///   counters.
-/// - `invariant_d` — cached StableSwap `D` value.
+/// - `reserve_a` / `reserve_b` — current token balances (in raw token units)
+/// - `amplification` — the `A` parameter controlling curve shape (dimensionless, 1–10 000)
+/// - `total_liq` — outstanding LP shares (in raw liquidity units)
+/// - `accumulated_fees_a` / `accumulated_fees_b` — lifetime fee counters (in raw token units)
+/// - `invariant_d` — cached StableSwap `D` value (in raw token units)
 #[derive(Debug, Clone, PartialEq)]
 pub struct HybridPool {
     token_pair: TokenPair,
