@@ -30,7 +30,14 @@ pub mod weighted;
 
 mod pool_box;
 
-#[cfg(test)]
+#[cfg(all(
+    test,
+    feature = "constant-product",
+    feature = "clmm",
+    feature = "hybrid",
+    feature = "weighted",
+    feature = "dynamic",
+))]
 #[allow(clippy::panic)]
 mod proptest_properties;
 
