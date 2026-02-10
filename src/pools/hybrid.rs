@@ -1445,4 +1445,81 @@ mod tests {
         // Output should be identical at peg
         assert_eq!(r_ab.amount_out(), r_ba.amount_out());
     }
+
+    // -- Remove zero liquidity ------------------------------------------------
+
+    #[test]
+    fn remove_zero_liquidity_rejected() {
+        let mut pool = make_pool(100, 1_000_000);
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::ZERO,
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Add liquidity both zero ----------------------------------------------
+
+    #[test]
+    fn add_liquidity_both_zero_rejected() {
+        let mut pool = make_pool(100, 1_000_000);
+        let change = LiquidityChange::Add {
+            amount_a: Amount::ZERO,
+            amount_b: Amount::ZERO,
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidQuantity(_))));
+    }
+
+    // -- Swap B → A exact-in --------------------------------------------------
+
+    #[test]
+    fn swap_exact_in_b_to_a() {
+        let mut pool = make_pool(100, 1_000_000);
+        let Ok(spec) = SwapSpec::exact_in(Amount::new(1_000)) else {
+            panic!("valid spec");
+        };
+        let Ok(result) = pool.swap(spec, tok_b()) else {
+            panic!("expected Ok");
+        };
+        // At peg with high amplification, output ≈ input minus fee
+        assert!(result.amount_out().get() > 990);
+        assert!(result.amount_out().get() <= 997);
+        assert!(result.fee().get() > 0);
+    }
+
+    // -- Invariant D preserved across multiple operations ---------------------
+
+    #[test]
+    fn invariant_d_preserved_multiple_operations() {
+        let mut pool = make_pool(100, 1_000_000);
+
+        // Perform several swaps and check D grows (fees stay in pool)
+        let mut d_prev = pool.invariant_d();
+        for i in 0..5 {
+            let Ok(spec) = SwapSpec::exact_in(Amount::new(10_000)) else {
+                panic!("valid spec");
+            };
+            let token = if i % 2 == 0 { tok_a() } else { tok_b() };
+            let Ok(_) = pool.swap(spec, token) else {
+                panic!("expected Ok on swap {i}");
+            };
+            let d_now = pool.invariant_d();
+            assert!(
+                d_now >= d_prev,
+                "D should not decrease: d_now={d_now} d_prev={d_prev}"
+            );
+            d_prev = d_now;
+        }
+
+        // Add liquidity → D should increase
+        let d_before_add = pool.invariant_d();
+        let Ok(change) = LiquidityChange::add(Amount::new(100_000), Amount::new(100_000)) else {
+            panic!("valid change");
+        };
+        let Ok(_) = pool.add_liquidity(&change) else {
+            panic!("expected Ok");
+        };
+        assert!(pool.invariant_d() >= d_before_add);
+    }
 }

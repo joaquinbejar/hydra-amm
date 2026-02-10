@@ -1382,4 +1382,55 @@ mod tests {
             1_000_000 - result.amount_out().get()
         );
     }
+
+    // -- Remove zero liquidity ------------------------------------------------
+
+    #[test]
+    fn remove_zero_liquidity_rejected() {
+        let mut pool = make_pool(0.5, 1.5, 1_000_000, 1_500_000, zero_fee());
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::ZERO,
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Add liquidity both zero ----------------------------------------------
+
+    #[test]
+    fn add_liquidity_both_zero_rejected() {
+        let mut pool = make_pool(0.5, 1.5, 1_000_000, 1_500_000, zero_fee());
+        let change = LiquidityChange::Add {
+            amount_a: Amount::ZERO,
+            amount_b: Amount::ZERO,
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidQuantity(_))));
+    }
+
+    // -- Set oracle price zero rejected ---------------------------------------
+
+    #[test]
+    fn set_oracle_price_zero_rejected() {
+        let mut pool = make_pool(0.5, 1.5, 1_000_000, 1_500_000, zero_fee());
+        let Ok(zero_price) = Price::new(0.0) else {
+            // Price::new(0.0) may itself reject zero — that's also valid
+            return;
+        };
+        let result = pool.set_oracle_price(zero_price);
+        assert!(matches!(result, Err(AmmError::InvalidPrice(_))));
+    }
+
+    // -- Set oracle price negative rejected -----------------------------------
+
+    #[test]
+    fn set_oracle_price_negative_rejected() {
+        let mut pool = make_pool(0.5, 1.5, 1_000_000, 1_500_000, zero_fee());
+        let Ok(neg_price) = Price::new(-1.0) else {
+            // Price::new(-1.0) may itself reject negative — that's also valid
+            return;
+        };
+        let result = pool.set_oracle_price(neg_price);
+        assert!(matches!(result, Err(AmmError::InvalidPrice(_))));
+    }
 }

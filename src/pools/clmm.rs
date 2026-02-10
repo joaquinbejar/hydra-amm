@@ -1466,4 +1466,63 @@ mod tests {
         assert!(result.amount_in().get() > 0);
         assert!(result.fee().get() > 0);
     }
+
+    // -- Add liquidity zero amount rejected -----------------------------------
+
+    #[test]
+    fn add_liquidity_zero_amount_rejected() {
+        let mut pool = make_pool_with_position(-1000, 1000, 10_000_000);
+        // amount_a = 0 (liquidity), amount_b encodes tick range
+        let change = LiquidityChange::Add {
+            amount_a: Amount::ZERO,
+            amount_b: Amount::new(100_100_001_001_000),
+        };
+        let result = pool.add_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidQuantity(_))));
+    }
+
+    // -- Remove zero liquidity rejected ---------------------------------------
+
+    #[test]
+    fn remove_zero_liquidity_rejected() {
+        let mut pool = make_pool_with_position(-1000, 1000, 10_000_000);
+        let change = LiquidityChange::Remove {
+            liquidity: Liquidity::ZERO,
+        };
+        let result = pool.remove_liquidity(&change);
+        assert!(matches!(result, Err(AmmError::InvalidLiquidity(_))));
+    }
+
+    // -- Swap reversibility loses to fees -------------------------------------
+
+    #[test]
+    fn swap_reversibility_loses_to_fees() {
+        let mut pool = make_pool_with_position(-5000, 5000, 100_000_000);
+        let original_amount = 10_000u128;
+
+        // Swap A → B
+        let Ok(spec_ab) = SwapSpec::exact_in(Amount::new(original_amount)) else {
+            panic!("valid spec");
+        };
+        let Ok(result_ab) = pool.swap(spec_ab, tok_a()) else {
+            panic!("expected Ok");
+        };
+        let received_b = result_ab.amount_out().get();
+        assert!(received_b > 0);
+
+        // Swap B → A with what we received
+        let Ok(spec_ba) = SwapSpec::exact_in(Amount::new(received_b)) else {
+            panic!("valid spec");
+        };
+        let Ok(result_ba) = pool.swap(spec_ba, tok_b()) else {
+            panic!("expected Ok");
+        };
+        let final_a = result_ba.amount_out().get();
+
+        // Round-trip should lose value due to fees
+        assert!(
+            final_a < original_amount,
+            "final_a={final_a} should < original={original_amount}"
+        );
+    }
 }
