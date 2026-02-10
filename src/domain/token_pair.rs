@@ -216,4 +216,54 @@ mod tests {
         let p2 = p;
         assert_eq!(p, p2);
     }
+
+    #[test]
+    fn debug_format() {
+        let a = tok(1, 6);
+        let b = tok(2, 18);
+        let Ok(pair) = TokenPair::new(a, b) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{pair:?}");
+        assert!(dbg.contains("TokenPair"));
+    }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = tok(1, 6);
+        let b = tok(2, 18);
+        let (Ok(p1), Ok(p2)) = (TokenPair::new(a, b), TokenPair::new(b, a)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&p1), hash_of(&p2));
+    }
+
+    #[test]
+    fn is_ordered_correctly_always_true() {
+        let a = tok(1, 6);
+        let b = tok(2, 18);
+        let Ok(pair) = TokenPair::new(b, a) else {
+            panic!("expected Ok");
+        };
+        assert!(pair.is_ordered_correctly());
+    }
+
+    #[test]
+    fn other_returns_first_when_given_second() {
+        let a = tok(1, 6);
+        let b = tok(2, 18);
+        let Ok(pair) = TokenPair::new(a, b) else {
+            panic!("expected Ok");
+        };
+        let Ok(other) = pair.other(&b) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(other, a);
+    }
 }

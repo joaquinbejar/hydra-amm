@@ -164,4 +164,41 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = FeeTier::TIER_0_30_PERCENT;
+        let b = FeeTier::new(BasisPoints::new(30));
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn apply_overflow() {
+        let tier = FeeTier::new(BasisPoints::new(u32::MAX));
+        let result = tier.apply_to_amount(Amount::MAX, Rounding::Down);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn debug_format() {
+        let tier = FeeTier::TIER_0_30_PERCENT;
+        let dbg = format!("{tier:?}");
+        assert!(dbg.contains("FeeTier"));
+    }
+
+    #[test]
+    fn apply_1bp_round_down_small_amount() {
+        // 1bp of 5000 = 5000 * 1 / 10_000 = 0.5 → floor = 0
+        let tier = FeeTier::TIER_0_01_PERCENT;
+        let Ok(fee) = tier.apply_to_amount(Amount::new(5_000), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(fee, Amount::ZERO);
+    }
 }

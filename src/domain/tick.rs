@@ -313,4 +313,42 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let (Ok(a), Ok(b)) = (Tick::new(1000), Tick::new(1000)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn checked_add_i32_overflow() {
+        // i32::MAX delta on MAX tick would overflow i32 before range check
+        assert_eq!(Tick::MAX.checked_add(i32::MAX), None);
+    }
+
+    #[test]
+    fn checked_sub_i32_overflow() {
+        assert_eq!(Tick::MIN.checked_sub(i32::MAX), None);
+    }
+
+    #[test]
+    fn display_negative() {
+        let Ok(t) = Tick::new(-42) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(format!("{t}"), "Tick(-42)");
+    }
+
+    #[test]
+    fn spacing_max_u16_valid() {
+        assert!(Tick::spacing_is_valid(u16::MAX));
+    }
 }

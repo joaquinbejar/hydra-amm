@@ -242,4 +242,49 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let Ok(a) = Position::new(tick(-100), tick(100), Liquidity::new(1000)) else {
+            panic!("expected Ok");
+        };
+        let Ok(b) = Position::new(tick(-100), tick(100), Liquidity::new(1000)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn width_full_range() {
+        // Position spanning MIN to MAX ticks
+        let Ok(pos) = Position::new(Tick::MIN, Tick::MAX, Liquidity::new(1)) else {
+            panic!("expected Ok");
+        };
+        // MAX - MIN = 887272 - (-887272) = 1774544
+        assert_eq!(pos.width(), 1_774_544);
+    }
+
+    #[test]
+    fn is_in_range_at_boundary_minus_one() {
+        let Ok(pos) = Position::new(tick(-100), tick(100), Liquidity::new(1)) else {
+            panic!("expected Ok");
+        };
+        // upper - 1 should be in range
+        assert!(pos.is_in_range(tick(99)));
+    }
+
+    #[test]
+    fn debug_format() {
+        let Ok(pos) = Position::new(tick(-10), tick(10), Liquidity::new(1)) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{pos:?}");
+        assert!(dbg.contains("Position"));
+    }
 }

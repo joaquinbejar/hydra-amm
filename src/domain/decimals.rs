@@ -190,4 +190,71 @@ mod tests {
         };
         assert!(d6 < d18);
     }
+
+    #[test]
+    fn scale_up_zero_amount() {
+        let Ok(d) = Decimals::new(18) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(d.scale_up(0), 0);
+    }
+
+    #[test]
+    fn scale_up_max_u64() {
+        // u64::MAX * 10^18 must fit in u128
+        let Ok(d) = Decimals::new(18) else {
+            panic!("expected Ok");
+        };
+        let result = d.scale_up(u64::MAX);
+        assert!(result > 0);
+    }
+
+    #[test]
+    fn scale_down_large_value_overflows() {
+        // scale_down of a huge value with zero decimals should still work
+        let d = Decimals::ZERO;
+        // u128::MAX / 1 = u128::MAX, which exceeds u64
+        let result = d.scale_down(u128::MAX);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn scale_down_zero() {
+        let Ok(d) = Decimals::new(6) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(d.scale_down(0), Ok(0));
+    }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let (Ok(a), Ok(b)) = (Decimals::new(6), Decimals::new(6)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn copy_semantics() {
+        let Ok(a) = Decimals::new(8) else {
+            panic!("expected Ok");
+        };
+        let b = a;
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn debug_format() {
+        let Ok(d) = Decimals::new(6) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{d:?}");
+        assert!(dbg.contains("Decimals"));
+    }
 }

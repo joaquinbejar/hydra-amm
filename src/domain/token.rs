@@ -127,4 +127,45 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn debug_format() {
+        let tok = sample_token(1, 6);
+        let dbg = format!("{tok:?}");
+        assert!(dbg.contains("Token"));
+    }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = sample_token(1, 6);
+        let b = sample_token(1, 6);
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn from_raw_amount_overflow() {
+        // u128::MAX with zero decimals => u128::MAX > u64::MAX
+        let tok = sample_token(1, 0);
+        let result = tok.from_raw_amount(u128::MAX);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn to_raw_amount_zero() {
+        let tok = sample_token(1, 18);
+        assert_eq!(tok.to_raw_amount(0), 0);
+    }
+
+    #[test]
+    fn different_address_not_equal() {
+        let a = sample_token(1, 6);
+        let b = sample_token(2, 6);
+        assert_ne!(a, b);
+    }
 }

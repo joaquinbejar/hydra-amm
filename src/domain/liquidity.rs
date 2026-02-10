@@ -187,4 +187,38 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = Liquidity::new(500);
+        let b = Liquidity::new(500);
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn debug_format() {
+        let l = Liquidity::new(42);
+        let dbg = format!("{l:?}");
+        assert!(dbg.contains("Liquidity"));
+    }
+
+    #[test]
+    fn mul_amount_by_one() {
+        let l = Liquidity::new(1);
+        let a = Amount::new(999);
+        assert_eq!(l.checked_mul_amount(&a), Some(a));
+    }
+
+    #[test]
+    fn sub_to_zero_is_zero() {
+        let l = Liquidity::new(42);
+        assert_eq!(l.checked_sub(&l), Some(Liquidity::ZERO));
+        assert!(l.checked_sub(&l).is_some_and(|v| v.is_zero()));
+    }
 }

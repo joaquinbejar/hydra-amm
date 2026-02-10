@@ -468,4 +468,72 @@ mod tests {
         assert!(fp(1) < fp(2));
         assert!(fp(2) > fp(1));
     }
+
+    // -- Additional edge cases ----------------------------------------------
+
+    #[test]
+    fn checked_div_zero_numerator() {
+        let Ok(r) = FP::zero().checked_div(&fp(10), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert!(r.is_zero());
+    }
+
+    #[test]
+    fn checked_div_zero_numerator_round_up() {
+        let Ok(r) = FP::zero().checked_div(&fp(10), Rounding::Up) else {
+            panic!("expected Ok");
+        };
+        assert!(r.is_zero());
+    }
+
+    #[test]
+    fn from_u128_roundtrip_small() {
+        let v = FP::from_u128(1_000_000);
+        assert_eq!(v.to_u128(), 1_000_000);
+    }
+
+    #[test]
+    fn checked_add_negative_values() {
+        let Ok(r) = fp(-3).checked_add(&fp(-2)) else {
+            panic!("expected Ok");
+        };
+        assert!((r.to_f64_lossy() - (-5.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn checked_mul_negative_times_positive() {
+        let Ok(r) = fp(-3).checked_mul(&fp(2)) else {
+            panic!("expected Ok");
+        };
+        assert!((r.to_f64_lossy() - (-6.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn checked_div_negative_by_positive() {
+        let Ok(r) = fp(-6).checked_div(&fp(2), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert!((r.to_f64_lossy() - (-3.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn min_with_equal() {
+        assert_eq!(Precision::min(&fp(5), &fp(5)), fp(5));
+    }
+
+    #[test]
+    fn max_with_equal() {
+        assert_eq!(Precision::max(&fp(5), &fp(5)), fp(5));
+    }
+
+    #[test]
+    fn min_with_negative() {
+        assert_eq!(Precision::min(&fp(-3), &fp(3)), fp(-3));
+    }
+
+    #[test]
+    fn max_with_negative() {
+        assert_eq!(Precision::max(&fp(-3), &fp(3)), fp(3));
+    }
 }

@@ -235,4 +235,43 @@ mod tests {
         // Protocol collects 4 fee units out of 10/3
         assert_eq!(div_round(10, 3, Rounding::Up), Some(4));
     }
+
+    // -- Identity and trivial cases -----------------------------------------
+
+    #[test]
+    fn one_divided_by_one() {
+        assert_eq!(div_round(1, 1, Rounding::Down), Some(1));
+        assert_eq!(div_round(1, 1, Rounding::Up), Some(1));
+    }
+
+    #[test]
+    fn numerator_equals_denominator() {
+        assert_eq!(div_round(100, 100, Rounding::Down), Some(1));
+        assert_eq!(div_round(100, 100, Rounding::Up), Some(1));
+    }
+
+    #[test]
+    fn one_divided_by_two() {
+        assert_eq!(div_round(1, 2, Rounding::Down), Some(0));
+        assert_eq!(div_round(1, 2, Rounding::Up), Some(1));
+    }
+
+    #[test]
+    fn consecutive_values_round_down() {
+        // 7/3 = 2 remainder 1
+        assert_eq!(div_round(7, 3, Rounding::Down), Some(2));
+        assert_eq!(div_round(7, 3, Rounding::Up), Some(3));
+    }
+
+    #[test]
+    fn down_always_leq_up() {
+        for (n, d) in [(1, 3), (5, 2), (100, 7), (u128::MAX, 3)] {
+            let down = div_round(n, d, Rounding::Down);
+            let up = div_round(n, d, Rounding::Up);
+            match (down, up) {
+                (Some(d_val), Some(u_val)) => assert!(d_val <= u_val),
+                _ => panic!("expected Some for n={n}, d={d}"),
+            }
+        }
+    }
 }

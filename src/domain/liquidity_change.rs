@@ -334,4 +334,64 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let Ok(a) = LiquidityChange::add(Amount::new(10), Amount::new(20)) else {
+            panic!("expected Ok");
+        };
+        let Ok(b) = LiquidityChange::add(Amount::new(10), Amount::new(20)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn debug_format_add() {
+        let Ok(c) = LiquidityChange::add(Amount::new(1), Amount::new(2)) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{c:?}");
+        assert!(dbg.contains("Add"));
+    }
+
+    #[test]
+    fn debug_format_remove() {
+        let Ok(c) = LiquidityChange::remove(Liquidity::new(100)) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{c:?}");
+        assert!(dbg.contains("Remove"));
+    }
+
+    #[test]
+    fn debug_format_rebalance() {
+        let Ok(c) = LiquidityChange::rebalance(tick(-10), tick(10)) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{c:?}");
+        assert!(dbg.contains("Rebalance"));
+    }
+
+    #[test]
+    fn remove_change_type() {
+        let Ok(c) = LiquidityChange::remove(Liquidity::new(1)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(c.change_type(), ChangeType::Remove);
+    }
+
+    #[test]
+    fn rebalance_change_type() {
+        let Ok(c) = LiquidityChange::rebalance(tick(-50), tick(50)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(c.change_type(), ChangeType::Rebalance);
+    }
 }

@@ -206,4 +206,49 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let Ok(a) = SwapSpec::exact_in(Amount::new(100)) else {
+            panic!("expected Ok");
+        };
+        let Ok(b) = SwapSpec::exact_in(Amount::new(100)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn exact_in_and_exact_out_not_equal() {
+        let Ok(a) = SwapSpec::exact_in(Amount::new(100)) else {
+            panic!("expected Ok");
+        };
+        let Ok(b) = SwapSpec::exact_out(Amount::new(100)) else {
+            panic!("expected Ok");
+        };
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn debug_format() {
+        let Ok(spec) = SwapSpec::exact_in(Amount::new(42)) else {
+            panic!("expected Ok");
+        };
+        let dbg = format!("{spec:?}");
+        assert!(dbg.contains("ExactIn"));
+    }
+
+    #[test]
+    fn amount_extraction_exact_out() {
+        let Ok(spec) = SwapSpec::exact_out(Amount::new(777)) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(spec.amount(), Amount::new(777));
+    }
 }
