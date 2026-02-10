@@ -89,4 +89,36 @@ mod tests {
         let dbg = format!("{addr:?}");
         assert!(dbg.contains("TokenAddress"));
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = TokenAddress::from_bytes([7u8; 32]);
+        let b = TokenAddress::from_bytes([7u8; 32]);
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn distinct_addresses_have_different_hashes() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = TokenAddress::from_bytes([1u8; 32]);
+        let b = TokenAddress::from_bytes([2u8; 32]);
+        assert_ne!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn max_byte_values() {
+        let addr = TokenAddress::from_bytes([0xFF; 32]);
+        assert_eq!(addr.as_bytes(), [0xFF; 32]);
+    }
 }

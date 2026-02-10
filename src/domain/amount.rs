@@ -333,4 +333,55 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn debug_format() {
+        let a = Amount::new(42);
+        let dbg = format!("{a:?}");
+        assert!(dbg.contains("Amount"));
+        assert!(dbg.contains("42"));
+    }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = Amount::new(100);
+        let b = Amount::new(100);
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn mul_identity() {
+        let a = Amount::new(999);
+        assert_eq!(a.checked_mul(&Amount::new(1)), Some(a));
+    }
+
+    #[test]
+    fn sub_zero_identity() {
+        let a = Amount::new(42);
+        assert_eq!(a.checked_sub(&Amount::ZERO), Some(a));
+    }
+
+    #[test]
+    fn div_larger_divisor_round_down() {
+        // 1 / 2 = 0 (floor)
+        assert_eq!(
+            Amount::new(1).checked_div(&Amount::new(2), Rounding::Down),
+            Some(Amount::ZERO)
+        );
+    }
+
+    #[test]
+    fn div_larger_divisor_round_up() {
+        // 1 / 2 = 1 (ceil)
+        assert_eq!(
+            Amount::new(1).checked_div(&Amount::new(2), Rounding::Up),
+            Some(Amount::new(1))
+        );
+    }
 }

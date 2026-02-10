@@ -88,4 +88,25 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        assert_eq!(hash_of(&Rounding::Up), hash_of(&Rounding::Up));
+        assert_eq!(hash_of(&Rounding::Down), hash_of(&Rounding::Down));
+        assert_ne!(hash_of(&Rounding::Up), hash_of(&Rounding::Down));
+    }
+
+    #[test]
+    fn debug_format() {
+        let dbg_up = format!("{:?}", Rounding::Up);
+        let dbg_down = format!("{:?}", Rounding::Down);
+        assert!(dbg_up.contains("Up"));
+        assert!(dbg_down.contains("Down"));
+    }
 }

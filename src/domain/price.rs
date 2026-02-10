@@ -310,4 +310,61 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn inverse_round_trip() {
+        let Ok(p) = Price::new(4.0) else {
+            panic!("expected Ok");
+        };
+        let Ok(inv) = p.inverse() else {
+            panic!("expected Ok");
+        };
+        let Ok(back) = inv.inverse() else {
+            panic!("expected Ok");
+        };
+        assert!((back.get() - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn multiply_fractional_rounding_difference() {
+        // 1/3 * 10 = 3.333...; Down = 3, Up = 4
+        let Ok(p) = Price::from_amounts(Amount::new(1), Amount::new(3), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        let Ok(down) = p.multiply(Amount::new(10), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        let Ok(up) = p.multiply(Amount::new(10), Rounding::Up) else {
+            panic!("expected Ok");
+        };
+        assert!(down.get() <= up.get());
+    }
+
+    #[test]
+    fn from_amounts_large_values() {
+        let Ok(p) = Price::from_amounts(
+            Amount::new(1_000_000_000_000_000_000),
+            Amount::new(1_000_000_000_000_000_000),
+            Rounding::Down,
+        ) else {
+            panic!("expected Ok");
+        };
+        assert!((p.get() - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn is_finite_always_true_for_valid() {
+        let Ok(p) = Price::new(1e100) else {
+            panic!("expected Ok");
+        };
+        assert!(p.is_finite());
+    }
+
+    #[test]
+    fn new_very_small_positive() {
+        let Ok(p) = Price::new(1e-300) else {
+            panic!("expected Ok");
+        };
+        assert!(p.get() > 0.0);
+    }
 }

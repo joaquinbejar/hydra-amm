@@ -241,4 +241,49 @@ mod tests {
         let b = a;
         assert_eq!(a, b);
     }
+
+    #[test]
+    fn hash_consistency() {
+        use core::hash::{Hash, Hasher};
+        fn hash_of<T: Hash>(t: &T) -> u64 {
+            let mut h = std::collections::hash_map::DefaultHasher::new();
+            t.hash(&mut h);
+            h.finish()
+        }
+        let a = BasisPoints::new(30);
+        let b = BasisPoints::new(30);
+        assert_eq!(hash_of(&a), hash_of(&b));
+    }
+
+    #[test]
+    fn apply_100_percent() {
+        // 10_000bp of 1_000 = 1_000 (full amount)
+        let bp = BasisPoints::MAX_PERCENT;
+        let Ok(result) = bp.apply(Amount::new(1_000), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(result, Amount::new(1_000));
+    }
+
+    #[test]
+    fn apply_50_percent() {
+        // 5_000bp of 1_000 = 500
+        let bp = BasisPoints::new(5_000);
+        let Ok(result) = bp.apply(Amount::new(1_000), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert_eq!(result, Amount::new(500));
+    }
+
+    #[test]
+    fn debug_format() {
+        let bp = BasisPoints::new(30);
+        let dbg = format!("{bp:?}");
+        assert!(dbg.contains("BasisPoints"));
+    }
+
+    #[test]
+    fn as_percent_zero() {
+        assert!((BasisPoints::ZERO.as_percent() - 0.0).abs() < f64::EPSILON);
+    }
 }

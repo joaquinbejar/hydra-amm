@@ -303,6 +303,62 @@ mod tests {
             };
             assert_eq!(r, Amount::new(800));
         }
+
+        #[test]
+        fn add_zero_identity() {
+            let Ok(r) = Amount::new(42).safe_add(&Amount::ZERO) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::new(42));
+        }
+
+        #[test]
+        fn sub_to_zero() {
+            let Ok(r) = Amount::new(42).safe_sub(&Amount::new(42)) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::ZERO);
+        }
+
+        #[test]
+        fn mul_by_zero() {
+            let Ok(r) = Amount::new(999).safe_mul(&Amount::ZERO) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::ZERO);
+        }
+
+        #[test]
+        fn mul_by_one() {
+            let Ok(r) = Amount::new(42).safe_mul(&Amount::new(1)) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::new(42));
+        }
+
+        #[test]
+        fn div_zero_numerator() {
+            let Ok(r) = Amount::ZERO.safe_div(&Amount::new(10), Rounding::Down) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::ZERO);
+        }
+
+        #[test]
+        fn div_by_one() {
+            let Ok(r) = Amount::new(42).safe_div(&Amount::new(1), Rounding::Down) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::new(42));
+        }
+
+        #[test]
+        fn add_u128_zero() {
+            let Ok(r) = Amount::new(42).safe_add_u128(0) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Amount::new(42));
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -440,6 +496,62 @@ mod tests {
                 panic!("expected Ok");
             };
             assert_eq!(r, Liquidity::new(800));
+        }
+
+        #[test]
+        fn add_zero_identity() {
+            let Ok(r) = Liquidity::new(42).safe_add(&Liquidity::ZERO) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::new(42));
+        }
+
+        #[test]
+        fn sub_to_zero() {
+            let Ok(r) = Liquidity::new(42).safe_sub(&Liquidity::new(42)) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::ZERO);
+        }
+
+        #[test]
+        fn mul_by_zero() {
+            let Ok(r) = Liquidity::new(999).safe_mul(&Liquidity::ZERO) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::ZERO);
+        }
+
+        #[test]
+        fn mul_by_one() {
+            let Ok(r) = Liquidity::new(42).safe_mul(&Liquidity::new(1)) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::new(42));
+        }
+
+        #[test]
+        fn div_zero_numerator() {
+            let Ok(r) = Liquidity::ZERO.safe_div(&Liquidity::new(10), Rounding::Down) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::ZERO);
+        }
+
+        #[test]
+        fn div_by_one() {
+            let Ok(r) = Liquidity::new(42).safe_div(&Liquidity::new(1), Rounding::Down) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::new(42));
+        }
+
+        #[test]
+        fn add_u128_zero() {
+            let Ok(r) = Liquidity::new(42).safe_add_u128(0) else {
+                panic!("expected Ok");
+            };
+            assert_eq!(r, Liquidity::new(42));
         }
     }
 }

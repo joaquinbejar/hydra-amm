@@ -399,4 +399,64 @@ mod tests {
         assert!(F::new(1.0) < F::new(2.0));
         assert!(F::new(2.0) > F::new(1.0));
     }
+
+    // -- NaN handling -------------------------------------------------------
+
+    #[test]
+    fn to_u128_nan_gives_zero() {
+        let v = F::new(f64::NAN);
+        assert_eq!(v.to_u128(), 0);
+    }
+
+    #[test]
+    fn to_u128_infinity_saturates() {
+        let v = F::new(f64::INFINITY);
+        // Rust saturating cast: f64::INFINITY as u128 = u128::MAX
+        assert!(v.to_u128() > 0);
+    }
+
+    #[test]
+    fn from_u128_roundtrip_small() {
+        let v = F::from_u128(1_000_000);
+        assert_eq!(v.to_u128(), 1_000_000);
+    }
+
+    #[test]
+    fn checked_add_negative_values() {
+        let Ok(r) = F::new(-3.0).checked_add(&F::new(-2.0)) else {
+            panic!("expected Ok");
+        };
+        assert!((r.get() - (-5.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn checked_mul_negative_times_positive() {
+        let Ok(r) = F::new(-3.0).checked_mul(&F::new(2.0)) else {
+            panic!("expected Ok");
+        };
+        assert!((r.get() - (-6.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn checked_div_negative_by_positive() {
+        let Ok(r) = F::new(-6.0).checked_div(&F::new(2.0), Rounding::Down) else {
+            panic!("expected Ok");
+        };
+        assert!((r.get() - (-3.0)).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn is_zero_negative_zero() {
+        assert!(F::new(-0.0).is_zero());
+    }
+
+    #[test]
+    fn min_with_equal() {
+        assert_eq!(F::new(5.0).min(&F::new(5.0)), F::new(5.0));
+    }
+
+    #[test]
+    fn max_with_equal() {
+        assert_eq!(F::new(5.0).max(&F::new(5.0)), F::new(5.0));
+    }
 }

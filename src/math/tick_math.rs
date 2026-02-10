@@ -399,4 +399,80 @@ mod tests {
         };
         assert_eq!(tick.get(), 6931);
     }
+
+    // -- Adjacent tick round-trips ------------------------------------------
+
+    #[test]
+    fn round_trip_adjacent_positive_ticks() {
+        // Test consecutive ticks around an interesting range
+        for t in 99..=101 {
+            let Ok(tick) = Tick::new(t) else {
+                panic!("expected Ok for tick {t}");
+            };
+            let Ok(price) = price_at_tick(tick) else {
+                panic!("expected Ok for price_at_tick({t})");
+            };
+            let Ok(rt) = tick_at_price(price) else {
+                panic!("expected Ok for tick_at_price");
+            };
+            assert_eq!(rt, tick, "round-trip failed for adjacent tick {t}");
+        }
+    }
+
+    #[test]
+    fn round_trip_adjacent_negative_ticks() {
+        for t in -101..=-99 {
+            let Ok(tick) = Tick::new(t) else {
+                panic!("expected Ok for tick {t}");
+            };
+            let Ok(price) = price_at_tick(tick) else {
+                panic!("expected Ok for price_at_tick({t})");
+            };
+            let Ok(rt) = tick_at_price(price) else {
+                panic!("expected Ok for tick_at_price");
+            };
+            assert_eq!(rt, tick, "round-trip failed for adjacent tick {t}");
+        }
+    }
+
+    // -- Symmetry -----------------------------------------------------------
+
+    #[test]
+    fn price_symmetry_positive_negative() {
+        // price_at_tick(t) * price_at_tick(-t) ≈ 1.0
+        for t in [1, 10, 100, 1_000, 10_000] {
+            let Ok(tick_pos) = Tick::new(t) else {
+                panic!("expected Ok");
+            };
+            let Ok(tick_neg) = Tick::new(-t) else {
+                panic!("expected Ok");
+            };
+            let Ok(p_pos) = price_at_tick(tick_pos) else {
+                panic!("expected Ok");
+            };
+            let Ok(p_neg) = price_at_tick(tick_neg) else {
+                panic!("expected Ok");
+            };
+            let product = p_pos.get() * p_neg.get();
+            assert!(
+                (product - 1.0).abs() < 1e-10,
+                "symmetry failed for tick {t}: product = {product}"
+            );
+        }
+    }
+
+    // -- Precision ----------------------------------------------------------
+
+    #[test]
+    fn tick_at_price_near_boundary() {
+        // Price just above tick 0 boundary (1.0 + tiny epsilon)
+        let Ok(price) = Price::new(1.0 + 1e-15) else {
+            panic!("expected Ok");
+        };
+        let Ok(tick) = tick_at_price(price) else {
+            panic!("expected Ok");
+        };
+        // Should be tick 0 since the price is extremely close to 1.0
+        assert_eq!(tick.get(), 0);
+    }
 }
