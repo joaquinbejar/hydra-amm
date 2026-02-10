@@ -66,19 +66,19 @@ serde_json = "1.0"
 
 [lints.rust]
 unsafe_code = "deny"
-missing_docs = "warn"
-missing_debug_implementations = "warn"
+missing_docs = "deny"
+missing_debug_implementations = "deny"
 
 [lints.clippy]
 unwrap_used = "deny"
 expect_used = "deny"
 panic = "deny"
-indexing_slicing = "warn"
-needless_collect = "warn"
-unnecessary_to_owned = "warn"
-clone_on_ref_ptr = "warn"
-missing_errors_doc = "warn"
-missing_panics_doc = "warn"
+indexing_slicing = "deny"
+needless_collect = "deny"
+unnecessary_to_owned = "deny"
+clone_on_ref_ptr = "deny"
+missing_errors_doc = "deny"
+missing_panics_doc = "deny"
 module_name_repetitions = "allow"
 similar_names = "allow"
 
