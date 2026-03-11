@@ -307,8 +307,12 @@ impl SwapPool for OrderBookPool {
                     .submit_market_order(order_id, qty, side)
                     .map_err(|_| AmmError::InsufficientLiquidity)?;
 
-                let exec_qty = match_result.executed_quantity();
-                let exec_value = match_result.executed_value();
+                let exec_qty = match_result
+                    .executed_quantity()
+                    .map_err(|_| AmmError::InsufficientLiquidity)?;
+                let exec_value = match_result
+                    .executed_value()
+                    .map_err(|_| AmmError::InsufficientLiquidity)?;
 
                 let (consumed_in, amount_out) =
                     self.compute_swap_output(side, exec_qty, exec_value)?;
@@ -414,8 +418,12 @@ impl SwapPool for OrderBookPool {
                     .submit_market_order(order_id, net_u64, side)
                     .map_err(|_| AmmError::InsufficientLiquidity)?;
 
-                let exec_qty = match_result.executed_quantity();
-                let exec_value = match_result.executed_value();
+                let exec_qty = match_result
+                    .executed_quantity()
+                    .map_err(|_| AmmError::InsufficientLiquidity)?;
+                let exec_value = match_result
+                    .executed_value()
+                    .map_err(|_| AmmError::InsufficientLiquidity)?;
                 let (_, actual_out) = self.compute_swap_output(side, exec_qty, exec_value)?;
 
                 // Accumulate fees
