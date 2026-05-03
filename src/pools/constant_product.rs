@@ -732,7 +732,7 @@ mod tests {
     #[test]
     fn invariant_k_preserved_after_swap() {
         let mut pool = make_pool(1_000_000, 2_000_000);
-        let k_before = pool.reserve_a().get() as u128 * pool.reserve_b().get() as u128;
+        let k_before = pool.reserve_a().get() * pool.reserve_b().get();
 
         let Ok(spec) = SwapSpec::exact_in(Amount::new(10_000)) else {
             panic!("valid spec");
@@ -741,7 +741,7 @@ mod tests {
             panic!("expected Ok");
         };
 
-        let k_after = pool.reserve_a().get() as u128 * pool.reserve_b().get() as u128;
+        let k_after = pool.reserve_a().get() * pool.reserve_b().get();
         // k_after >= k_before due to fee retention
         assert!(k_after >= k_before);
     }

@@ -312,7 +312,7 @@ proptest! {
     ) {
         let swap_in = (ra / 500).max(1);
         let mut pool = make_cp(ra, rb);
-        let k_before = pool.reserve_a().get() as u128 * pool.reserve_b().get() as u128;
+        let k_before = pool.reserve_a().get() * pool.reserve_b().get();
 
         for _ in 0..5 {
             let Ok(spec) = SwapSpec::exact_in(Amount::new(swap_in)) else {
@@ -321,7 +321,7 @@ proptest! {
             if pool.swap(spec, tok_a()).is_err() { break; }
         }
 
-        let k_after = pool.reserve_a().get() as u128 * pool.reserve_b().get() as u128;
+        let k_after = pool.reserve_a().get() * pool.reserve_b().get();
         prop_assert!(
             k_after >= k_before,
             "CP invariant k should grow from fees: k_after={} < k_before={}",
