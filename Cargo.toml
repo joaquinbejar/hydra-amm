@@ -64,7 +64,7 @@ fixed = { version = "1", default-features = false, optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
 
 # Order book engine (optional, behind order-book feature)
-orderbook-rs = { version = "0.7", optional = true }
+orderbook-rs = { version = "0.8", optional = true }
 
 [dev-dependencies]
 # Property-based testing for invariant validation
