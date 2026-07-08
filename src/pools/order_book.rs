@@ -309,7 +309,8 @@ impl SwapPool for OrderBookPool {
 
                 let exec_qty = match_result
                     .executed_quantity()
-                    .map_err(|_| AmmError::InsufficientLiquidity)?;
+                    .map_err(|_| AmmError::InsufficientLiquidity)?
+                    .as_u64();
                 let exec_value = match_result
                     .executed_value()
                     .map_err(|_| AmmError::InsufficientLiquidity)?;
@@ -420,7 +421,8 @@ impl SwapPool for OrderBookPool {
 
                 let exec_qty = match_result
                     .executed_quantity()
-                    .map_err(|_| AmmError::InsufficientLiquidity)?;
+                    .map_err(|_| AmmError::InsufficientLiquidity)?
+                    .as_u64();
                 let exec_value = match_result
                     .executed_value()
                     .map_err(|_| AmmError::InsufficientLiquidity)?;
@@ -579,7 +581,7 @@ impl LiquidityPool for OrderBookPool {
                 break;
             }
             let oid = order_arc.id();
-            let order_qty = u128::from(order_arc.visible_quantity());
+            let order_qty = u128::from(order_arc.visible_quantity().as_u64());
 
             if self.inner.cancel_order(oid).is_ok() {
                 cancelled_qty = cancelled_qty.saturating_add(order_qty);
