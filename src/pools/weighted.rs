@@ -736,9 +736,7 @@ impl LiquidityPool for WeightedPool {
                 .ok_or(AmmError::Overflow("fee sum overflow"))?;
         }
 
-        for f in &mut self.accumulated_fees {
-            *f = Amount::ZERO;
-        }
+        self.accumulated_fees.fill(Amount::ZERO);
 
         Ok(total_fees)
     }
