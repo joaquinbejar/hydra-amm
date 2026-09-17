@@ -397,3 +397,22 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 - **Repository**: [github.com/joaquinbejar/hydra-amm](https://github.com/joaquinbejar/hydra-amm)
 - **Crates.io**: [crates.io/crates/hydra-amm](https://crates.io/crates/hydra-amm)
 - **Documentation**: [docs.rs/hydra-amm](https://docs.rs/hydra-amm)
+
+<!-- related-projects:start -->
+## Related projects
+
+Repositories by the same author that this project depends on, and repositories that depend on it.
+
+### Depends on
+
+| Repository | Description |
+|------------|-------------|
+| [OrderBook-rs](https://github.com/joaquinbejar/OrderBook-rs) · [crates.io](https://crates.io/crates/orderbook-rs) | High-performance, lock-free limit order book and matching engine. |
+
+### Used by
+
+| Repository | Description |
+|------------|-------------|
+| [hydra-gateway](https://github.com/joaquinbejar/hydra-gateway) | JSON REST API and WebSocket feed over every pool type supported by hydra-amm. |
+
+<!-- related-projects:end -->
