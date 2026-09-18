@@ -64,11 +64,11 @@ fixed = { version = "1", default-features = false, optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"], optional = true }
 
 # Order book engine (optional, behind order-book feature)
-orderbook-rs = { version = "0.12", optional = true }
+orderbook-rs = { version = "0.13", optional = true }
 
 [dev-dependencies]
 # Property-based testing for invariant validation
-proptest = "1.6"
+proptest = "1.11"
 
 # Serialization for test fixtures
 serde_json = "1.0"
