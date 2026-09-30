@@ -28,14 +28,14 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hydra-amm = "0.1"
+//! hydra-amm = "0.2"
 //! ```
 //!
 //! To use only specific pool types:
 //!
 //! ```toml
 //! [dependencies]
-//! hydra-amm = { version = "0.1", default-features = false, features = ["std", "constant-product"] }
+//! hydra-amm = { version = "0.2", default-features = false, features = ["std", "constant-product"] }
 //! ```
 //!
 //! ## Create a pool and execute a swap

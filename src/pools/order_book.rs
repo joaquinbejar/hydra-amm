@@ -33,6 +33,7 @@ use crate::domain::{
 };
 use crate::error::AmmError;
 use crate::traits::{FromConfig, LiquidityPool, SwapPool};
+use core::sync::atomic::{AtomicU64, Ordering};
 use orderbook_rs::{DefaultOrderBook, OrderId, Side, TimeInForce};
 
 /// An Order Book hybrid AMM pool.
@@ -49,6 +50,7 @@ use orderbook_rs::{DefaultOrderBook, OrderId, Side, TimeInForce};
 /// - `lot_size` — minimum quantity increment for orders (in raw token units)
 /// - `inner` — the `orderbook-rs` CLOB engine
 /// - `accumulated_fees_base` / `accumulated_fees_quote` — fee counters (in raw token units)
+/// - `next_order_id` — monotonic counter for the sequential ids of submitted orders
 ///
 /// # Trait Limitations
 ///
@@ -65,6 +67,7 @@ pub struct OrderBookPool {
     inner: DefaultOrderBook,
     accumulated_fees_base: Amount,
     accumulated_fees_quote: Amount,
+    next_order_id: AtomicU64,
 }
 
 impl core::fmt::Debug for OrderBookPool {
@@ -165,12 +168,25 @@ impl OrderBookPool {
             return Err(AmmError::InvalidQuantity("quantity must be non-zero"));
         }
 
-        let id = OrderId::new();
+        let id = self.next_order_id()?;
         self.inner
             .add_limit_order(id, price, qty_u64, side, TimeInForce::Gtc, None)
             .map_err(|_| AmmError::InvalidConfiguration("orderbook: order placement failed"))?;
 
         Ok(id)
+    }
+
+    /// Allocates the next sequential [`OrderId`] for an order submitted
+    /// to the inner book.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AmmError::Overflow`] if the id counter is exhausted.
+    fn next_order_id(&self) -> Result<OrderId, AmmError> {
+        self.next_order_id
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+            .map(OrderId::sequential)
+            .map_err(|_| AmmError::Overflow("order id counter exhausted"))
     }
 
     /// Converts an [`Amount`] to `u64`, returning an error on overflow.
@@ -240,6 +256,7 @@ impl FromConfig<OrderBookConfig> for OrderBookPool {
             inner: book,
             accumulated_fees_base: Amount::ZERO,
             accumulated_fees_quote: Amount::ZERO,
+            next_order_id: AtomicU64::new(1),
         })
     }
 }
@@ -293,7 +310,8 @@ impl SwapPool for OrderBookPool {
                     // We simulate the order to determine fill quantity.
                     let sim = self
                         .inner
-                        .simulate_market_order(Self::amount_to_u64(net_input)?, Side::Buy);
+                        .simulate_market_order(Self::amount_to_u64(net_input)?, Side::Buy)
+                        .map_err(|_| AmmError::InsufficientLiquidity)?;
                     if sim.total_filled == 0 {
                         return Err(AmmError::InsufficientLiquidity);
                     }
@@ -301,7 +319,7 @@ impl SwapPool for OrderBookPool {
                 };
 
                 // Submit market order
-                let order_id = OrderId::new();
+                let order_id = self.next_order_id()?;
                 let match_result = self
                     .inner
                     .submit_market_order(order_id, qty, side)
@@ -378,7 +396,10 @@ impl SwapPool for OrderBookPool {
                         continue;
                     };
 
-                    let sim = self.inner.simulate_market_order(net_u64, side);
+                    let Ok(sim) = self.inner.simulate_market_order(net_u64, side) else {
+                        lo = mid.saturating_add(1);
+                        continue;
+                    };
                     let (_, out) = match self.compute_swap_output(
                         side,
                         sim.total_filled,
@@ -413,7 +434,7 @@ impl SwapPool for OrderBookPool {
                     .ok_or(AmmError::Overflow("net input underflow"))?;
                 let net_u64 = Self::amount_to_u64(net)?;
 
-                let order_id = OrderId::new();
+                let order_id = self.next_order_id()?;
                 let match_result = self
                     .inner
                     .submit_market_order(order_id, net_u64, side)
@@ -617,8 +638,14 @@ impl LiquidityPool for OrderBookPool {
 
     /// Returns total liquidity as the sum of all resting order
     /// quantities on both sides of the book.
+    ///
+    /// If the book cannot report its depth (a side exceeds `u64::MAX`),
+    /// each side saturates at `u64::MAX`.
     fn total_liquidity(&self) -> Liquidity {
-        let (buy_pressure, sell_pressure) = self.inner.buy_sell_pressure();
+        let (buy_pressure, sell_pressure) = self
+            .inner
+            .buy_sell_pressure()
+            .unwrap_or((u64::MAX, u64::MAX));
         let total = u128::from(buy_pressure).saturating_add(u128::from(sell_pressure));
         Liquidity::new(total)
     }
@@ -750,7 +777,9 @@ mod tests {
         assert!(pool.place_limit_order(150, 300, Side::Sell).is_ok());
 
         // Total quantity at level = 600
-        let (_, sell_pressure) = pool.inner.buy_sell_pressure();
+        let Ok((_, sell_pressure)) = pool.inner.buy_sell_pressure() else {
+            panic!("buy_sell_pressure failed");
+        };
         assert_eq!(sell_pressure, 600);
         assert_eq!(pool.total_liquidity(), Liquidity::new(600));
     }
@@ -791,7 +820,9 @@ mod tests {
         assert!(pool.place_limit_order(151, 400, Side::Buy).is_ok());
 
         // Total bid liquidity = 900
-        let (buy_p, _) = pool.inner.buy_sell_pressure();
+        let Ok((buy_p, _)) = pool.inner.buy_sell_pressure() else {
+            panic!("buy_sell_pressure failed");
+        };
         assert_eq!(buy_p, 900);
 
         // Swap 1000 base (sell) — walks through all levels, 100 unmatched
@@ -832,7 +863,9 @@ mod tests {
         assert_eq!(sr.amount_out().get(), 45000);
 
         // Remaining on bid: 500 - 300 = 200
-        let (buy_p, _) = pool.inner.buy_sell_pressure();
+        let Ok((buy_p, _)) = pool.inner.buy_sell_pressure() else {
+            panic!("buy_sell_pressure failed");
+        };
         assert_eq!(buy_p, 200);
     }
 
@@ -1209,7 +1242,9 @@ mod tests {
         assert!(r2.is_ok());
 
         // Remaining: 1000 - 200 - 300 = 500
-        let (buy_p, _) = pool.inner.buy_sell_pressure();
+        let Ok((buy_p, _)) = pool.inner.buy_sell_pressure() else {
+            panic!("buy_sell_pressure failed");
+        };
         assert_eq!(buy_p, 500);
     }
 
