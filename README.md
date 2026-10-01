@@ -74,14 +74,14 @@ Or add it manually to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hydra-amm = "0.1"
+hydra-amm = "0.2"
 ```
 
 This enables **all pool types** by default. To select only the pool types you need:
 
 ```toml
 [dependencies]
-hydra-amm = { version = "0.1", default-features = false, features = ["std", "constant-product", "clmm"] }
+hydra-amm = { version = "0.2", default-features = false, features = ["std", "constant-product", "clmm"] }
 ```
 
 ---
@@ -107,7 +107,7 @@ For an on-chain environment that only needs constant-product swaps with fixed-po
 
 ```toml
 [dependencies]
-hydra-amm = { version = "0.1", default-features = false, features = ["fixed-point", "constant-product"] }
+hydra-amm = { version = "0.2", default-features = false, features = ["fixed-point", "constant-product"] }
 ```
 
 ---
