@@ -145,16 +145,14 @@ package:
 # =============================================================================
 
 .PHONY: coverage
-coverage:
+coverage: check-cargo-tarpaulin
 	@echo "Generating code coverage report (XML)..."
-	@command -v cargo-tarpaulin > /dev/null || cargo install cargo-tarpaulin
 	@mkdir -p coverage
 	RUST_LOG=warn cargo tarpaulin --verbose --all-features --timeout 120 --out xml --output-dir coverage
 
 .PHONY: coverage-html
-coverage-html:
+coverage-html: check-cargo-tarpaulin
 	@echo "Generating HTML coverage report..."
-	@command -v cargo-tarpaulin > /dev/null || cargo install cargo-tarpaulin
 	@mkdir -p coverage
 	RUST_LOG=warn cargo tarpaulin --all-features --timeout 120 --out html --output-dir coverage
 
@@ -162,6 +160,16 @@ coverage-html:
 open-coverage:
 	@echo "Opening coverage report..."
 	open coverage/tarpaulin-report.html
+
+# cargo-tarpaulin < 0.37.5 cannot read coverage data from Rust 1.99+, so a
+# stale local install is upgraded rather than reused.
+.PHONY: check-cargo-tarpaulin
+check-cargo-tarpaulin:
+	@v=$$(cargo tarpaulin --version 2>/dev/null | awk '{print $$NF}'); \
+	if [ -z "$$v" ] || [ "$$(printf '%s\n' 0.37.5 "$$v" | sort -V | head -n1)" != "0.37.5" ]; then \
+		echo "Installing cargo-tarpaulin >= 0.37.5..."; \
+		cargo install cargo-tarpaulin --locked --version '>=0.37.5'; \
+	fi
 
 .PHONY: check-cargo-criterion
 check-cargo-criterion:
