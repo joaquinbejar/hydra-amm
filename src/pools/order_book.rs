@@ -184,7 +184,7 @@ impl OrderBookPool {
     /// Returns [`AmmError::Overflow`] if the id counter is exhausted.
     fn next_order_id(&self) -> Result<OrderId, AmmError> {
         self.next_order_id
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_add(1))
             .map(OrderId::sequential)
             .map_err(|_| AmmError::Overflow("order id counter exhausted"))
     }
